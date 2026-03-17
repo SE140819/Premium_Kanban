@@ -1,0 +1,7 @@
+/* Main CSS cleared to remove layout constraints */
+#app {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
