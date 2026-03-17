@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { notify } from './utils/notification'
 
-const BASE_URL = 'https://crudcrud.com/api/daffc345732d4efd82dfa4394c54aecd'
+const BASE_URL = 'https://crudcrud.com/api/299700468c3d4ed38b2b4232ca1b43f5'
 
 const api = axios.create({
   baseURL: BASE_URL,
