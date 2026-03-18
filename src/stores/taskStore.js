@@ -14,7 +14,6 @@ export const useTaskStore = defineStore('task', () => {
           title: 'Backlog',
           archivedCount: 0,
           wipLimit: null,
-          layout: 'grid',
           tasks: []
         },
         { id: 'waiting', title: 'Waiting', archivedCount: 0, wipLimit: null, tasks: [] },
@@ -35,6 +34,7 @@ export const useTaskStore = defineStore('task', () => {
 
   const isLoading = ref(false)
   const error = ref(null)
+  const hiddenColumns = ref(JSON.parse(localStorage.getItem('hiddenColumns') || '[]'))
 
   const findColumn = colId => {
     for (const group of groups.value) {
@@ -157,14 +157,26 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
+  const toggleColumnVisibility = (columnId) => {
+    const index = hiddenColumns.value.indexOf(columnId)
+    if (index === -1) {
+      hiddenColumns.value.push(columnId)
+    } else {
+      hiddenColumns.value.splice(index, 1)
+    }
+    localStorage.setItem('hiddenColumns', JSON.stringify(hiddenColumns.value))
+  }
+
   return {
     groups,
     isLoading,
     error,
+    hiddenColumns,
     fetchTasks,
     addTask,
     updateTask,
     deleteTask,
-    moveTask
+    moveTask,
+    toggleColumnVisibility
   }
 })

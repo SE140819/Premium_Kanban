@@ -19,6 +19,7 @@
       <el-form-item label="Description">
         <div class="editor-container">
           <QuillEditor
+            :key="modalKey"
             v-model:content="form.description"
             content-type="html"
             theme="snow"
@@ -104,8 +105,9 @@
   })
 
   const emit = defineEmits(['close', 'save', 'delete'])
-
   const visible = ref(false)
+  const modalKey = ref(0) // Used to force reset QuillEditor
+
   const form = reactive({
     title: '',
     description: '',
@@ -113,21 +115,28 @@
     deadline: null
   })
 
+  const resetForm = () => {
+    form.title = ''
+    form.description = ''
+    form.priority = 'low'
+    form.deadline = null
+    modalKey.value++
+  }
+
   watch(
     () => props.isOpen,
     newVal => {
       visible.value = newVal
       if (newVal && !props.task) {
-        form.title = ''
-        form.description = ''
-        form.priority = 'low'
-        form.deadline = null
+        resetForm()
       }
     }
   )
 
   watch(visible, newVal => {
-    if (!newVal) emit('close')
+    if (!newVal) {
+      emit('close')
+    }
   })
 
   watch(
@@ -138,11 +147,7 @@
         form.description = newTask.description || ''
         form.priority = newTask.priority || 'low'
         form.deadline = newTask.deadline || null
-      } else {
-        form.title = ''
-        form.description = ''
-        form.priority = 'low'
-        form.deadline = null
+        modalKey.value++
       }
     },
     { immediate: true }
@@ -160,17 +165,24 @@
   }
 
   const handleClosed = () => {
+    resetForm()
     emit('close')
   }
 </script>
 
 <style>
+  /* Global overlay blur for Linear look */
+  .el-overlay {
+    backdrop-filter: blur(8px) !important;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+  }
+
   .premium-dialog {
-    background: var(--bg-primary) !important;
-    backdrop-filter: blur(24px) !important;
-    border-radius: 20px !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
+    background: var(--bg-secondary) !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5) !important;
+    padding: 0 !important;
   }
 
   .premium-dialog .el-dialog__title {

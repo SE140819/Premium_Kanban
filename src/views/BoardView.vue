@@ -7,56 +7,82 @@
       <el-icon class="is-loading"><Loading /></el-icon>
       <span>Loading tasks...</span>
     </div>
-    <div
-      v-if="store.error"
-      class="error-banner"
-    >
-      {{ store.error }}
-      <el-button
-        size="small"
-        @click="store.fetchTasks"
-        >Retry</el-button
-      >
-    </div>
-    <div class="header-bar">
-      <div class="header-left">
-        <span class="logo-text">Premium Kanban</span>
+
+    <!-- Top Navigation / Breadcrumbs -->
+    <header class="view-header">
+      <div class="breadcrumb">
+        <el-icon
+          class="mobile-menu-btn"
+          @click="$emit('toggle-sidebar')"
+        >
+          <Menu />
+        </el-icon>
+        <el-icon class="brand-icon"><Platform /></el-icon>
+        <span class="breadcrumb-item hidden-mobile">Fastboy</span>
+        <span class="separator hidden-mobile">/</span>
+        <span class="breadcrumb-item active">Todo app</span>
       </div>
-      <div class="header-right">
+      <div class="header-actions">
+        <el-dropdown trigger="click" :hide-on-click="false">
+          <span class="icon-btn view-btn">
+            <el-icon><View /></el-icon>
+            <span class="hidden-mobile">View</span>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu class="view-settings-dropdown">
+              <div class="dropdown-header">Columns</div>
+              <el-dropdown-item
+                v-for="column in allColumns"
+                :key="'toggle-'+column.id"
+              >
+                <el-checkbox
+                  :model-value="!store.hiddenColumns.includes(column.id)"
+                  @change="store.toggleColumnVisibility(column.id)"
+                >
+                  {{ column.title }}
+                </el-checkbox>
+              </el-dropdown-item>
+              <div v-if="store.hiddenColumns.length > 0" class="dropdown-divider"></div>
+              <el-dropdown-item
+                v-if="store.hiddenColumns.length > 0"
+                @click="resetColumns"
+                class="reset-btn"
+              >
+                Show all columns
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+
         <el-button
           class="theme-toggle"
           circle
           @click="$emit('toggle-theme', $event)"
           :icon="currentTheme === 'dark' ? 'Sunny' : 'Moon'"
         />
+        <el-icon class="icon-btn"><Share /></el-icon>
+        <el-icon class="icon-btn"><MoreFilled /></el-icon>
       </div>
-    </div>
-    <div class="board-container">
-      <div class="groups-header">
-        <div
-          v-for="group in store.groups"
-          :key="group.id"
-          class="group-header-item"
-          :style="{ gridColumn: `span ${group.columns.length}` }"
-        >
-          {{ group.title }}
-        </div>
-      </div>
+    </header>
 
-      <div class="columns-container">
-        <template
-          v-for="group in store.groups"
-          :key="'group-cols-' + group.id"
-        >
-          <BoardColumn
-            v-for="column in group.columns"
-            :key="column.id"
-            :column="column"
-            @add-task="openAddTaskModal"
-            @edit-task="openEditTaskModal"
-            @move-task="handleMoveTask"
-          />
-        </template>
+
+    <div class="board-scroller">
+      <div class="board-container">
+        <div class="columns-container">
+          <template
+            v-for="group in store.groups"
+            :key="'group-cols-' + group.id"
+          >
+            <BoardColumn
+              v-for="column in group.columns.filter(c => !store.hiddenColumns.includes(c.id))"
+              :key="column.id"
+              :column="column"
+              @add-task="openAddTaskModal"
+              @edit-task="openEditTaskModal"
+              @move-task="handleMoveTask"
+            />
+          </template>
+        </div>
       </div>
     </div>
 
@@ -71,8 +97,9 @@
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue'
+  import { ref, onMounted, computed } from 'vue'
   import { useTaskStore } from '../stores/taskStore'
+  import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
   import BoardColumn from '../components/BoardColumn.vue'
   import TaskModal from '../components/TaskModal.vue'
 
@@ -81,6 +108,15 @@
   })
 
   const store = useTaskStore()
+
+  const allColumns = computed(() => {
+    return store.groups.flatMap(g => g.columns)
+  })
+
+  const resetColumns = () => {
+    store.hiddenColumns = []
+    localStorage.setItem('hiddenColumns', JSON.stringify([]))
+  }
 
   onMounted(() => {
     store.fetchTasks()
@@ -134,127 +170,279 @@
 
 <style scoped>
   .board-view {
-    min-height: 100vh;
-    padding: 0;
-    background: #f4f5f7;
-    overflow-x: auto;
-  }
-
-  :root[data-theme='dark'] .board-view {
-    background: #0f172a;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
 
   .loading-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 2000;
     gap: 12px;
-    color: #5e6c84;
+    color: #fff;
   }
 
-  :root[data-theme='dark'] .loading-overlay {
-    background: rgba(15, 23, 42, 0.8);
-    color: #e2e8f0;
-  }
-
-  .error-banner {
-    background: #fee2e2;
-    color: #b91c1c;
-    padding: 8px 24px;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    font-size: 14px;
-  }
-
-  .header-bar {
+  /* Header / Breadcrumbs */
+  .view-header {
+    padding: 12px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 24px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    border-bottom: 1px solid var(--border-color);
   }
 
-  :root[data-theme='dark'] .header-bar {
-    background: #1e293b;
-    border-color: #334155;
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
-  .logo-text {
-    font-weight: 800;
+  .breadcrumb .el-icon {
     font-size: 14px;
-    color: #5e6c84;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    color: #f59e0b; /* Orange-ish icon like in sample */
   }
 
-  :root[data-theme='dark'] .logo-text {
-    color: #e2e8f0;
+  .breadcrumb-item.active {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .separator {
+    opacity: 0.3;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+  }
+
+  .icon-btn {
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  .icon-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .view-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .view-btn:hover {
+    background: var(--hover-bg);
+  }
+
+  .view-settings-dropdown {
+    min-width: 180px;
+    padding: 8px 0;
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .dropdown-header {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 8px 0;
+  }
+
+  .reset-btn {
+    color: var(--accent-blue) !important;
+    font-size: 12px !important;
   }
 
   .theme-toggle {
     background: transparent !important;
     border: none !important;
-    font-size: 18px !important;
-    color: #5e6c84 !important;
+    padding: 4px !important;
+    color: var(--text-secondary) !important;
   }
 
-  :root[data-theme='dark'] .theme-toggle {
-    color: #e2e8f0 !important;
+  .theme-toggle:hover {
+    color: var(--text-primary) !important;
+  }
+
+
+  /* Filter Bar */
+  .filter-bar {
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filter-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+
+  .avatar-mini, .avatar-user {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4f46e5;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  .filter-val {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .close-icon {
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.6;
+  }
+
+  .filter-add {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 18px;
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .clear-btn {
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .save-btn {
+    background-color: var(--accent-blue) !important;
+    border: none !important;
+    border-radius: 6px !important;
+  }
+
+  /* Board Area */
+  .board-scroller {
+    flex: 1;
+    overflow-x: auto;
+    background-color: var(--bg-primary);
   }
 
   .board-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-height: 100vh;
-    border-left: 1px solid #e0e0e0;
-  }
-
-  :root[data-theme='dark'] .board-container {
-    border-color: #334155;
-  }
-
-  .groups-header {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    min-width: 1200px;
-  }
-
-  .group-header-item {
-    padding: 12px;
-    text-align: center;
-    font-weight: 700;
-    color: #5e6c84;
-    font-size: 16px;
-    border: 1px solid #e0e0e0;
-    border-left: none;
-    background: #fff;
-  }
-
-  :root[data-theme='dark'] .group-header-item {
-    background: #1e293b;
-    color: #e2e8f0;
-    border-color: #334155;
+    min-width: fit-content;
+    height: 100%;
+    padding: 20px;
   }
 
   .columns-container {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    min-width: 1200px;
+    display: flex;
+    gap: 16px;
+    height: 100%;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+    cursor: pointer;
+    font-size: 20px;
+    margin-right: 8px;
+    color: var(--text-primary);
+  }
+
+  .brand-icon {
+    color: #f59e0b;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: flex;
+    }
+
+    .hidden-mobile {
+      display: none;
+    }
+
+    .view-header {
+      padding: 10px 16px;
+    }
+
+    .board-container {
+      padding: 12px;
+    }
+
+    .columns-container {
+      gap: 12px;
+    }
+
+    .board-scroller {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  .column-placeholder {
+    width: 240px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 8px;
+    height: fit-content;
+  }
+
+  .column-placeholder:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
   }
 </style>

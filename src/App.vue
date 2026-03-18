@@ -3,27 +3,38 @@
     id="app"
     :data-theme="theme"
   >
-    <div class="mesh-gradient"></div>
-    <div class="glass-overlay"></div>
-    <router-view v-slot="{ Component }">
-      <transition
-        name="page"
-        mode="out-in"
-      >
-        <component
-          :is="Component"
-          @toggle-theme="toggleTheme"
-          :current-theme="theme"
-        />
-      </transition>
-    </router-view>
+    <div class="app-layout">
+      <div
+        v-if="sidebarOpen"
+        class="mobile-overlay"
+        @click="sidebarOpen = false"
+      ></div>
+      <Sidebar :is-open="sidebarOpen" />
+      <main class="main-content">
+        <router-view v-slot="{ Component }">
+          <transition
+            name="page"
+            mode="out-in"
+          >
+            <component
+              :is="Component"
+              :current-theme="theme"
+              @toggle-theme="toggleTheme"
+              @toggle-sidebar="sidebarOpen = !sidebarOpen"
+            />
+          </transition>
+        </router-view>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
   import { ref, onMounted } from 'vue'
+  import Sidebar from './components/Sidebar.vue'
 
   const theme = ref('dark')
+  const sidebarOpen = ref(false)
 
   onMounted(() => {
     const savedTheme = localStorage.getItem('theme') || 'dark'
@@ -81,45 +92,71 @@
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
   :root {
-    /* Default: Light Theme */
-    --bg-primary: #f8fafc;
-    --bg-mesh-1: rgba(59, 130, 246, 0.1);
-    --bg-mesh-2: rgba(139, 92, 246, 0.05);
-    --bg-mesh-3: rgba(236, 72, 153, 0.05);
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(0, 0, 0, 0.08);
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --accent-blue: #2563eb;
-    --accent-purple: #7c3aed;
-    --accent-pink: #db2777;
-  }
+  /* Linear-style Dark Theme (Default) */
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #161616;
+  --sidebar-bg: #0d0d0d;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #8a8a8e;
+  --accent-blue: #4f46e5;
+  --accent-purple: #7c3aed;
+  --card-bg: #161616;
+  --hover-bg: rgba(255, 255, 255, 0.05);
+}
 
-  [data-theme='dark'],
-  .dark {
-    --bg-primary: #0f172a;
-    --bg-mesh-1: rgba(59, 130, 246, 0.15);
-    --bg-mesh-2: rgba(139, 92, 246, 0.15);
-    --bg-mesh-3: rgba(236, 72, 153, 0.15);
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.5);
-    --accent-blue: #3b82f6;
-    --accent-purple: #8b5cf6;
-    --accent-pink: #ec4899;
-  }
+[data-theme='light'] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f8f9;
+  --sidebar-bg: #f7f8f9;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --accent-blue: #3b82f6;
+  --card-bg: #ffffff;
+  --hover-bg: rgba(0, 0, 0, 0.03);
+}
 
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow: hidden;
   }
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .mobile-overlay {
+    display: block;
+  }
+}
 
   #app {
     min-height: 100vh;

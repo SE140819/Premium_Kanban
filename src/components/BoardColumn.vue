@@ -1,30 +1,37 @@
 <template>
   <div
     class="board-column"
-    :class="{ 'layout-grid': column.layout === 'grid' }"
   >
     <div class="column-header">
-      <div class="header-main">
-        <h2 class="column-title">{{ column.title }}</h2>
+      <div class="header-left">
         <div
-          v-if="column.wipLimit"
-          class="wip-limit"
-          :class="{ 'over-limit': column.tasks.length > column.wipLimit }"
-        >
-          {{ column.tasks.length }} / {{ column.wipLimit }}
-        </div>
+          class="status-circle"
+          :class="column.id"
+        ></div>
+        <h2 class="column-title">{{ column.title }}</h2>
+        <el-icon class="priority-warn"><Warning /></el-icon>
+        <span class="task-count">
+          {{ column.tasks.length }}<span v-if="column.wipLimit"> / {{ column.wipLimit }}</span>
+        </span>
+      </div>
+      <div class="header-right">
+        <el-dropdown trigger="click">
+          <el-icon class="icon-btn"><MoreFilled /></el-icon>
+          <template #dropdown>
+            <el-dropdown-menu class="column-dropdown">
+              <el-dropdown-item @click="store.toggleColumnVisibility(column.id)">
+                Hide column
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <el-icon
+          class="icon-btn add-btn"
+          @click="$emit('add-task', column.id)"
+          ><Plus
+        /></el-icon>
       </div>
     </div>
-
-    <div class="column-actions">
-      <button
-        class="add-task-link"
-        @click="$emit('add-task', column.id)"
-      >
-        + add task
-      </button>
-    </div>
-
     <div
       class="task-list"
       ref="taskList"
@@ -36,6 +43,13 @@
         :task="task"
         @edit="$emit('edit-task', { columnId: column.id, task })"
       />
+      <!-- Add button only at the bottom of the list -->
+      <div
+        class="add-task-hover-btn"
+        @click="$emit('add-task', column.id)"
+      >
+        <el-icon><Plus /></el-icon>
+      </div>
     </div>
   </div>
 </template>
@@ -43,7 +57,11 @@
 <script setup>
   import { ref, onMounted } from 'vue'
   import Sortable from 'sortablejs'
+  import { MoreFilled, Plus, Warning } from '@element-plus/icons-vue'
+  import { useTaskStore } from '../stores/taskStore'
   import TaskCard from './TaskCard.vue'
+
+  const store = useTaskStore()
 
   const props = defineProps({
     column: {
@@ -74,105 +92,149 @@
 
 <style scoped>
   .board-column {
-    background: #fff;
-    border-right: 1px solid #e0e0e0;
-    border-bottom: 1px solid #e0e0e0;
-    width: 100%;
-    min-height: 100vh;
+    min-width: 280px;
+    width: 280px;
     display: flex;
     flex-direction: column;
-    padding: 0;
-  }
-
-  :root[data-theme='dark'] .board-column {
-    background: #1e293b;
-    border-color: #334155;
+    height: 100%;
   }
 
   .column-header {
-    padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fff;
-  }
-
-  :root[data-theme='dark'] .column-header {
-    background: #1e293b;
-    border-color: #334155;
-  }
-
-  .header-main {
-    text-align: center;
-  }
-
-  .column-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #4b5563;
-    margin: 0;
-  }
-
-  :root[data-theme='dark'] .column-title {
-    color: #e2e8f0;
-  }
-
-  .wip-limit {
-    font-size: 12px;
-    font-weight: 700;
-    color: #10b981;
-    margin-top: 4px;
-  }
-
-  .wip-limit.over-limit {
-    color: #ef4444;
-  }
-
-  .column-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
+    margin-bottom: 4px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
     gap: 8px;
   }
 
-  .archived-text {
-    font-size: 11px;
-    color: #9ca3af;
+  .status-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #6b7280;
   }
 
-  .add-task-link {
-    background: none;
-    border: none;
-    font-size: 11px;
-    color: #9ca3af;
+  /* Status circle colors */
+  .status-circle.todo { border-color: #ef4444; }
+  .status-circle.in-progress { border-color: #facc15; }
+  .status-circle.in-review { border-color: #3b82f6; }
+  .status-circle.ready-prd { border-color: #10b981; }
+
+  .column-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .priority-warn {
+    font-size: 14px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    margin-left: 4px;
+  }
+
+  .task-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-left: 4px;
+    opacity: 0.6;
+    font-weight: 500;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .board-column:hover .header-right {
+    opacity: 1;
+  }
+
+  .icon-btn {
     cursor: pointer;
+    font-size: 14px;
   }
 
-  .add-task-link:hover {
-    text-decoration: underline;
+  .icon-btn:hover {
+    color: var(--text-primary);
   }
 
   .task-list {
-    flex-grow: 1;
-    padding: 12px;
-    min-height: 200px;
-    border-right: 1px dashed #e5e7eb;
+    flex: 1;
+    padding: 4px 12px;
+    min-height: 100px;
+    overflow-y: overlay; /* Use overlay for cleaner look if supported */
+    overflow-x: hidden; /* Prevent accidental horizontal scroll */
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  :root[data-theme='dark'] .task-list {
-    border-color: #334155;
+  /* Custom Scrollbar for a cleaner Linear look */
+  .task-list::-webkit-scrollbar {
+    width: 4px;
   }
 
-  /* Backlog grid layout */
-  .layout-grid .task-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    align-content: flex-start;
+  .task-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .task-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+  }
+
+  .task-list:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .add-task-hover-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease-in-out;
+    font-size: 16px;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+  }
+
+  .board-column:hover .add-task-hover-btn {
+    opacity: 1;
+  }
+
+  .add-task-hover-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.05);
   }
 
   .ghost-card {
-    opacity: 0.4;
-    background: #f3f4f6;
-    border: 1px dashed #9ca3af;
+    opacity: 0.1;
+    background: #fff;
+    border: 1px dashed var(--accent-blue);
+    border-radius: 8px;
+  }
+
+  :root[data-theme='dark'] .ghost-card {
+    background: var(--bg-secondary);
+    opacity: 0.2;
   }
 </style>
