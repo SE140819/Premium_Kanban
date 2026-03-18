@@ -9,7 +9,7 @@
     >
       <div class="avatar-pulse"></div>
       <img
-        src="/C:/Users/DEV/.gemini/antigravity/brain/1b41bb8b-4974-4071-856e-6f5b5b95343b/ai_robot_assistant_avatar_1773803348647.png"
+        :src="aiAvatar"
         alt="AI Assistant"
         class="robot-avatar"
       />
@@ -93,6 +93,7 @@
   import { useTaskStore } from '../stores/taskStore'
   import { Setting, Refresh, Close } from '@element-plus/icons-vue'
   import { getAISuggestion } from '../services/aiService'
+  import aiAvatar from '../assets/ai-avatar.png'
 
   const store = useTaskStore()
   const isExpanded = ref(true)
