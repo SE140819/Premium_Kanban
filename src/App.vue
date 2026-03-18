@@ -26,12 +26,14 @@
         </router-view>
       </main>
     </div>
+    <AIRobotAssistant />
   </div>
 </template>
 
 <script setup>
   import { ref, onMounted } from 'vue'
   import Sidebar from './components/Sidebar.vue'
+  import AIRobotAssistant from './components/AIRobotAssistant.vue'
 
   const theme = ref('dark')
   const sidebarOpen = ref(false)

@@ -1,94 +1,102 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="task ? 'Edit Task' : 'New Task'"
-    width="500px"
+    width="640px"
     @closed="handleClosed"
-    custom-class="premium-dialog"
+    class="premium-dialog"
+    :show-close="false"
   >
-    <el-form
-      :model="form"
-      label-position="top"
-    >
-      <el-form-item label="Title">
-        <el-input
-          v-model="form.title"
-          placeholder="What needs to be done?"
-        />
-      </el-form-item>
-      <el-form-item label="Description">
-        <div class="editor-container">
-          <QuillEditor
-            :key="modalKey"
-            v-model:content="form.description"
-            content-type="html"
-            theme="snow"
-            placeholder="Add more details..."
-            :toolbar="['bold', 'italic', 'underline', { list: 'ordered' }, { list: 'bullet' }]"
-          />
+    <template #header>
+      <div class="custom-header">
+        <h2 class="modal-title">{{ task ? 'Edit Task' : 'New Task' }}</h2>
+        <div class="header-meta" v-if="task">
+          <span class="task-id">SAT-{{ String(task._id || task.id).slice(-3).toUpperCase() }}</span>
         </div>
-      </el-form-item>
-      <div class="form-row">
-        <el-form-item
-          label="Priority"
-          class="flex-1"
-        >
-          <el-select
-            v-model="form.priority"
-            placeholder="Select Priority"
-            style="width: 100%"
-          >
-            <el-option
-              label="Low"
-              value="low"
-            >
-              <span class="dot low"></span> Low
-            </el-option>
-            <el-option
-              label="Medium"
-              value="medium"
-            >
-              <span class="dot medium"></span> Medium
-            </el-option>
-            <el-option
-              label="High"
-              value="high"
-            >
-              <span class="dot high"></span> High
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item
-          label="Deadline"
-          class="flex-1"
-        >
-          <el-date-picker
-            v-model="form.deadline"
-            type="date"
-            placeholder="Set deadline"
-            style="width: 100%"
+      </div>
+    </template>
+
+    <div class="modal-body">
+      <el-form
+        :model="form"
+        label-position="top"
+      >
+        <el-form-item class="title-item">
+          <el-input
+            v-model="form.title"
+            placeholder="Issue title"
+            class="title-input"
           />
         </el-form-item>
-      </div>
-    </el-form>
+
+        <el-form-item class="editor-item">
+          <div class="editor-container">
+            <QuillEditor
+              :key="modalKey"
+              v-model:content="form.description"
+              content-type="html"
+              theme="snow"
+              placeholder="Add description..."
+              :toolbar="['bold', 'italic', 'underline', { list: 'ordered' }, { list: 'bullet' }, 'link']"
+            />
+          </div>
+        </el-form-item>
+
+        <div class="form-grid">
+          <div class="grid-item">
+            <label class="item-label">
+              <el-icon><Warning /></el-icon> Priority
+            </label>
+            <el-select
+              v-model="form.priority"
+              placeholder="Priority"
+              class="premium-select"
+            >
+              <el-option label="Low" value="low">
+                <div class="option-content"><span class="dot low"></span> Low</div>
+              </el-option>
+              <el-option label="Medium" value="medium">
+                <div class="option-content"><span class="dot medium"></span> Medium</div>
+              </el-option>
+              <el-option label="High" value="high">
+                <div class="option-content"><span class="dot high"></span> High</div>
+              </el-option>
+            </el-select>
+          </div>
+
+          <div class="grid-item">
+            <label class="item-label">
+              <el-icon><Calendar /></el-icon> Due Date
+            </label>
+            <el-date-picker
+              v-model="form.deadline"
+              type="date"
+              placeholder="Set due date"
+              class="premium-datepicker"
+            />
+          </div>
+        </div>
+      </el-form>
+    </div>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button
-          v-if="task"
-          type="danger"
-          plain
-          @click="handleDelete"
-          >Delete</el-button
-        >
-        <div class="right-actions">
-          <el-button @click="visible = false">Cancel</el-button>
+        <div class="left-actions">
           <el-button
-            type="primary"
+            v-if="task"
+            class="action-btn delete-btn"
+            @click="handleDelete"
+          >
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </div>
+        <div class="right-actions">
+          <el-button class="action-btn secondary-btn" @click="visible = false">Cancel</el-button>
+          <el-button
+            class="action-btn primary-btn"
             @click="handleSave"
             :disabled="!form.title.trim()"
           >
-            Save Task
+            {{ task ? 'Update Title' : 'Create Issue' }}
           </el-button>
         </div>
       </div>
@@ -98,6 +106,7 @@
 
 <script setup>
   import { reactive, watch, ref } from 'vue'
+  import { Warning, Calendar, Delete } from '@element-plus/icons-vue'
 
   const props = defineProps({
     isOpen: Boolean,
@@ -170,42 +179,147 @@
   }
 </script>
 
-<style>
-  /* Global overlay blur for Linear look */
-  .el-overlay {
-    backdrop-filter: blur(8px) !important;
+<style scoped>
+  :global(.el-overlay) {
+    backdrop-filter: blur(12px) !important;
     background-color: rgba(0, 0, 0, 0.4) !important;
   }
 
-  .premium-dialog {
-    background: var(--bg-secondary) !important;
+  :global(.premium-dialog) {
+    background: #161616 !important;
     border-radius: 12px !important;
-    border: 1px solid var(--border-color) !important;
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6) !important;
     padding: 0 !important;
+    overflow: hidden;
   }
 
-  .premium-dialog .el-dialog__title {
+  :global(.premium-dialog .el-dialog__header) {
+    margin-right: 0 !important;
+    padding: 20px 24px 12px !important;
+  }
+
+  :global(.premium-dialog .el-dialog__body) {
+    padding: 0 24px 20px !important;
+  }
+
+  :global(.premium-dialog .el-dialog__footer) {
+    padding: 16px 24px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .custom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .task-id {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  .title-item {
+    margin-bottom: 8px !important;
+  }
+
+  :deep(.title-input .el-input__wrapper) {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  :deep(.title-input .el-input__inner) {
+    font-size: 20px;
+    font-weight: 700;
     color: var(--text-primary) !important;
-    font-weight: 700 !important;
+    height: 48px;
   }
 
-  .premium-dialog .el-form-item__label {
-    color: var(--text-secondary) !important;
-    font-weight: 600 !important;
+  :deep(.title-input .el-input__inner::placeholder) {
+    color: rgba(255, 255, 255, 0.15);
   }
 
-  .premium-dialog .el-input__inner,
-  .premium-dialog .el-textarea__inner {
-    background: var(--glass-bg) !important;
-    border-color: var(--glass-border) !important;
-    color: var(--text-primary) !important;
-    border-radius: 12px !important;
+  .editor-container {
+    background: transparent;
+    border: none;
+    margin-bottom: 24px;
   }
 
-  .premium-dialog .el-input__inner:focus,
-  .premium-dialog .el-textarea__inner:focus {
-    border-color: var(--accent-blue) !important;
+  :deep(.ql-toolbar) {
+    border: none !important;
+    padding: 8px 0 !important;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+
+  :deep(.ql-toolbar:hover) {
+    opacity: 1;
+  }
+
+  :deep(.ql-container) {
+    border: none !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 15px !important;
+    min-height: 120px;
+  }
+
+  :deep(.ql-editor) {
+    padding: 12px 0 !important;
+    color: #e2e8f0 !important;
+  }
+
+  :deep(.ql-editor.ql-blank::before) {
+    color: rgba(255, 255, 255, 0.2) !important;
+    font-style: normal;
+    left: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 12px;
+  }
+
+  .item-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  :deep(.premium-select .el-input__wrapper),
+  :deep(.premium-datepicker .el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.03) !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s;
+  }
+
+  :deep(.premium-select .el-input__wrapper:hover),
+  :deep(.premium-datepicker .el-input__wrapper:hover) {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
   }
 
   .dialog-footer {
@@ -216,71 +330,78 @@
 
   .right-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
   }
 
-  .form-row {
+  .action-btn {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    height: 36px !important;
+    padding: 0 16px !important;
+    transition: all 0.2s;
+  }
+
+  .primary-btn {
+    background: #4f46e5 !important;
+    border: none !important;
+    color: white !important;
+  }
+
+  .primary-btn:hover:not(.is-disabled) {
+    background: #6366f1 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  .secondary-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .delete-btn {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    padding: 0 10px !important;
+  }
+
+  .delete-btn:hover {
+    color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .option-content {
     display: flex;
-    gap: 20px;
-  }
-
-  .flex-1 {
-    flex: 1;
-  }
-
-  /* Quill Editor Styles */
-  .editor-container {
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-  }
-
-  :deep(.ql-toolbar) {
-    border: none !important;
-    border-bottom: 1px solid var(--glass-border) !important;
-    background: rgba(0, 0, 0, 0.02) !important;
-  }
-
-  :deep(.ql-container) {
-    border: none !important;
-    min-height: 150px;
-    font-family: 'Outfit', sans-serif !important;
-    font-size: 14px !important;
-  }
-
-  :root[data-theme='dark'] :deep(.ql-editor) {
-    color: #f1f5f9;
-  }
-
-  :root[data-theme='dark'] :deep(.ql-toolbar button .ql-stroke) {
-    stroke: #94a3b8;
-  }
-
-  :root[data-theme='dark'] :deep(.ql-toolbar button .ql-fill) {
-    fill: #94a3b8;
-  }
-
-  :root[data-theme='dark'] :deep(.ql-toolbar) {
-    background: rgba(255, 255, 255, 0.05) !important;
+    align-items: center;
   }
 
   .dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    margin-right: 8px;
+    margin-right: 10px;
   }
 
-  .dot.low {
-    background: #64748b;
-  }
-  .dot.medium {
-    background: #eab308;
-  }
-  .dot.high {
-    background: #ef4444;
+  .dot.low { background: #94a3b8; }
+  .dot.medium { background: #eab308; }
+  .dot.high { background: #ef4444; }
+
+  /* Mobile adjustments */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    :global(.premium-dialog) {
+      width: 90% !important;
+    }
   }
 </style>

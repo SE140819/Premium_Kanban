@@ -60,8 +60,8 @@
           @click="$emit('toggle-theme', $event)"
           :icon="currentTheme === 'dark' ? 'Sunny' : 'Moon'"
         />
-        <el-icon class="icon-btn"><Share /></el-icon>
-        <el-icon class="icon-btn"><MoreFilled /></el-icon>
+        <el-icon class="icon-btn" @click="comingSoon"><Share /></el-icon>
+        <el-icon class="icon-btn" @click="comingSoon"><MoreFilled /></el-icon>
       </div>
     </header>
 
@@ -100,6 +100,7 @@
   import { ref, onMounted, computed } from 'vue'
   import { useTaskStore } from '../stores/taskStore'
   import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
+  import { notify } from '../utils/notification'
   import BoardColumn from '../components/BoardColumn.vue'
   import TaskModal from '../components/TaskModal.vue'
 
@@ -116,6 +117,10 @@
   const resetColumns = () => {
     store.hiddenColumns = []
     localStorage.setItem('hiddenColumns', JSON.stringify([]))
+  }
+
+  const comingSoon = () => {
+    notify.info('This feature is coming soon!')
   }
 
   onMounted(() => {

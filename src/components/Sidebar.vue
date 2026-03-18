@@ -11,22 +11,22 @@
         <span class="brand-name">Fastboy</span>
       </div>
       <div class="header-actions">
-        <el-icon class="icon-btn"><Search /></el-icon>
-        <el-icon class="icon-btn"><EditPen /></el-icon>
+        <el-icon class="icon-btn" @click="comingSoon"><Search /></el-icon>
+        <el-icon class="icon-btn" @click="comingSoon"><EditPen /></el-icon>
       </div>
     </div>
 
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <div class="nav-item">
+        <div class="nav-item" @click="comingSoon">
           <el-icon><Odometer /></el-icon>
           <span>Pulse</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" @click="comingSoon">
           <el-icon><Message /></el-icon>
           <span>Inbox</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" @click="comingSoon">
           <el-icon><User /></el-icon>
           <span>My issues</span>
         </div>
@@ -34,7 +34,7 @@
 
       <div class="nav-section">
         <h3 class="section-title">Workspace</h3>
-        <div class="nav-item">
+        <div class="nav-item" @click="comingSoon">
           <el-icon><Operation /></el-icon>
           <span>Initiatives</span>
         </div>
@@ -42,11 +42,11 @@
           <el-icon><Finished /></el-icon>
           <span>Projects</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" @click="comingSoon">
           <el-icon><View /></el-icon>
           <span>Views</span>
         </div>
-        <div class="nav-item more">
+        <div class="nav-item more" @click="comingSoon">
           <el-icon><MoreFilled /></el-icon>
           <span>More</span>
         </div>
@@ -58,11 +58,11 @@
 
       <div class="nav-section">
         <h3 class="section-title">Try</h3>
-        <div class="nav-item transparent">
+        <div class="nav-item transparent" @click="comingSoon">
           <el-icon><Connection /></el-icon>
           <span>Connect Cursor</span>
         </div>
-        <div class="nav-item transparent">
+        <div class="nav-item transparent" @click="comingSoon">
           <el-icon><MagicStick /></el-icon>
           <span>Connect Codex</span>
         </div>
@@ -92,10 +92,15 @@
     Connection,
     MagicStick
   } from '@element-plus/icons-vue'
+  import { notify } from '../utils/notification'
 
   defineProps({
     isOpen: Boolean
   })
+
+  const comingSoon = () => {
+    notify.info('This feature is coming soon!')
+  }
 </script>
 
 <style scoped>
