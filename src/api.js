@@ -38,7 +38,7 @@ const api = {
       const error = new Error('Task not found')
       error.response = { data: { message: 'Task not found' } }
       throw error
-    }
+    }    
   },
   delete: async (url) => {
     await delay(300)
@@ -55,6 +55,7 @@ const api = {
 // Provide generic interceptor stubs to prevent store from crashing
 api.interceptors = {
   response: {
+
     use: () => {}
   }
 }

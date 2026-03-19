@@ -78,6 +78,7 @@
       group: 'tasks',
       animation: 200,
       ghostClass: 'ghost-card',
+      filter: '.add-task-hover-btn', // Prevent dragging the add button
       onEnd: evt => {
         emit('move-task', {
           fromColId: evt.from.dataset.columnId,
