@@ -161,7 +161,7 @@
     },
     { immediate: true }
   )
-
+   
   const handleSave = () => {
     if (!form.title.trim()) return
     emit('save', { ...form })

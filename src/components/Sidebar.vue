@@ -77,7 +77,7 @@
   </aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import {
     Platform,
     Search,

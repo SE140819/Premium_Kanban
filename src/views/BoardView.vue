@@ -96,7 +96,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted, computed } from 'vue'
   import { useTaskStore } from '../stores/taskStore'
   import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
@@ -127,17 +127,17 @@
     store.fetchTasks()
   })
 
-  const isModalOpen = ref(false)
-  const selectedTask = ref(null)
-  const activeColumnId = ref(null)
+  const isModalOpen = ref<boolean>(false)
+  const selectedTask = ref<Record<string, any> | null>(null)
+  const activeColumnId = ref<string | null>(null)
 
-  const openAddTaskModal = columnId => {
+  const openAddTaskModal = (columnId: string) => {
     activeColumnId.value = columnId
     selectedTask.value = null
     isModalOpen.value = true
   }
 
-  const openEditTaskModal = ({ columnId, task }) => {
+  const openEditTaskModal = ({ columnId, task }: { columnId: string; task: Record<string, any> }) => {
     activeColumnId.value = columnId
     selectedTask.value = { ...task }
     isModalOpen.value = true
@@ -149,13 +149,13 @@
     activeColumnId.value = null
   }
 
-  const handleSaveTask = async taskData => {
+  const handleSaveTask = async (taskData: Record<string, any>) => {
     if (selectedTask.value) {
       const id = selectedTask.value._id || selectedTask.value.id
       const updatedTask = { ...selectedTask.value, ...taskData }
       await store.updateTask(id, updatedTask)
     } else {
-      await store.addTask(activeColumnId.value, taskData)
+      await store.addTask(activeColumnId.value!, taskData)
     }
     closeModal()
   }
@@ -168,7 +168,7 @@
     closeModal()
   }
 
-  const handleMoveTask = async ({ fromColId, toColId, taskId, newIndex }) => {
+  const handleMoveTask = async ({ fromColId, toColId, taskId, newIndex }: { fromColId: string; toColId: string; taskId: string; newIndex: number }) => {
     await store.moveTask(fromColId, toColId, taskId, newIndex)
   }
 </script>

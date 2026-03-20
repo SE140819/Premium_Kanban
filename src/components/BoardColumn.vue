@@ -54,9 +54,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted } from 'vue'
-  import Sortable from 'sortablejs'
+  import Sortable, { type SortableEvent } from 'sortablejs'
   import { MoreFilled, Plus, Warning } from '@element-plus/icons-vue'
   import { useTaskStore } from '../stores/taskStore'
   import TaskCard from './TaskCard.vue'
@@ -71,15 +71,16 @@
   })
 
   const emit = defineEmits(['add-task', 'edit-task', 'move-task'])
-  const taskList = ref(null)
+  const taskList = ref<HTMLElement | null>(null)
 
   onMounted(() => {
+    if (!taskList.value) return
     Sortable.create(taskList.value, {
       group: 'tasks',
       animation: 200,
       ghostClass: 'ghost-card',
       filter: '.add-task-hover-btn', // Prevent dragging the add button
-      onEnd: evt => {
+      onEnd: (evt: SortableEvent) => {
         emit('move-task', {
           fromColId: evt.from.dataset.columnId,
           toColId: evt.to.dataset.columnId,

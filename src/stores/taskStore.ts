@@ -1,10 +1,24 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '../api'
+import api, { type Task } from '../api'
 import { notify } from '../utils/notification'
 
+export interface Column {
+  id: string
+  title: string
+  archivedCount?: number
+  wipLimit?: number | null
+  tasks: Task[]
+}
+
+export interface Group {
+  id: string
+  title: string
+  columns: Column[]
+}
+
 export const useTaskStore = defineStore('task', () => {
-  const groups = ref([
+  const groups = ref<Group[]>([
     {
       id: 'group-todo',
       title: 'To do',
@@ -32,19 +46,19 @@ export const useTaskStore = defineStore('task', () => {
     }
   ])
 
-  const isLoading = ref(false)
-  const error = ref(null)
-  const hiddenColumns = ref(JSON.parse(localStorage.getItem('hiddenColumns') || '[]'))
+  const isLoading = ref<boolean>(false)
+  const error = ref<string | null>(null)
+  const hiddenColumns = ref<string[]>(JSON.parse(localStorage.getItem('hiddenColumns') || '[]'))
 
-  const findColumn = colId => {
+  const findColumn = (colId: string): Column | null => {
     for (const group of groups.value) {
-      const col = group.columns.find(c => c.id === colId)
+      const col = group.columns.find((c: Column) => c.id === colId)
       if (col) return col
     }
     return null
   }
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (): Promise<void> => {
     isLoading.value = true
     error.value = null
     try {
@@ -54,12 +68,14 @@ export const useTaskStore = defineStore('task', () => {
           col.tasks = []
         })
       })
-      allTasks.forEach(task => {
-        const column = findColumn(task.columnId)
-        if (column) {
-          column.tasks.push(task)
-        }
-      })
+      if (allTasks && Array.isArray(allTasks)) {
+        allTasks.forEach((task: Task) => {
+          const column = findColumn(task.columnId)
+          if (column) {
+            column.tasks.push(task)
+          }
+        })
+      }
     } catch (err) {
       error.value = 'Failed to fetch tasks'
       notify.error('Could not load tasks from the server.')
@@ -69,7 +85,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  const addTask = async (columnId, taskData) => {
+  const addTask = async (columnId: string, taskData: Partial<Task>): Promise<void> => {
     try {
       const newTask = {
         ...taskData,
@@ -78,8 +94,8 @@ export const useTaskStore = defineStore('task', () => {
       }
       const { data } = await api.post('/tasks', newTask)
       const column = findColumn(columnId)
-      if (column) {
-        column.tasks.push(data)
+      if (column && data) {
+        column.tasks.push(data as Task)
       }
       notify.success(`Task "${data.title}" added successfully.`)
     } catch (err) {
@@ -88,7 +104,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  const updateTask = async (taskId, updateData) => {
+  const updateTask = async (taskId: string | number, updateData: Partial<Task>): Promise<void> => {
     try {
       const { _id, ...data } = updateData
       await api.put(`/tasks/${taskId}`, data)
@@ -96,7 +112,7 @@ export const useTaskStore = defineStore('task', () => {
         for (const col of group.columns) {
           const idx = col.tasks.findIndex(t => (t._id || t.id) === taskId)
           if (idx !== -1) {
-            col.tasks[idx] = { ...col.tasks[idx], ...updateData }
+            col.tasks[idx] = { ...col.tasks[idx], ...updateData } as Task
             notify.success('Task updated successfully.')
             return
           }
@@ -109,7 +125,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  const deleteTask = async taskId => {
+  const deleteTask = async (taskId: string | number): Promise<void> => {
     try {
       await api.delete(`/tasks/${taskId}`)
       for (const group of groups.value) {
@@ -120,7 +136,7 @@ export const useTaskStore = defineStore('task', () => {
             notify.success('Task deleted successfully.')
             return
           }
-        }
+        }   
       }
     } catch (err) {
       notify.error('Failed to delete task.')
@@ -128,7 +144,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  const moveTask = async (fromColId, toColId, taskId, newIndex) => {
+  const moveTask = async (fromColId: string, toColId: string, taskId: string | number, newIndex: number): Promise<void> => {
     const fromCol = findColumn(fromColId)
     const toCol = findColumn(toColId)
     if (!fromCol || !toCol) return
@@ -141,15 +157,19 @@ export const useTaskStore = defineStore('task', () => {
       return
     }
 
-    const [task] = fromCol.tasks.splice(taskIndex, 1)
+    const spliced = fromCol.tasks.splice(taskIndex, 1)
+    const task = spliced[0]
+    if (!task) return
     task.columnId = toColId
     toCol.tasks.splice(newIndex, 0, task)
 
     try {
       const id = task._id || task.id
-      const { _id, ...updateData } = task
-      await api.put(`/tasks/${id}`, updateData)
-      notify.success(`Moved to ${toCol.title}`)
+      const { _id, ...updateData } = task as Task & { _id?: string }
+      if(id) {
+         await api.put(`/tasks/${id}`, updateData)
+         notify.success(`Moved to ${toCol.title}`)
+      }
     } catch (err) {
       notify.error('Failed to save task position.')
       console.error('Failed to move task:', err)
@@ -157,7 +177,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  const toggleColumnVisibility = (columnId) => {
+  const toggleColumnVisibility = (columnId: string): void => {
     const index = hiddenColumns.value.indexOf(columnId)
     if (index === -1) {
       hiddenColumns.value.push(columnId)

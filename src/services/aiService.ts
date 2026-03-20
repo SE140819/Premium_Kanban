@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const GEMINI_API_KEY = 'AIzaSyDyJ2K41Lxr1ztBtj_ZbLr_7ycr0s2ni5g'
 
-export const getAISuggestion = async (apiKey, boardData) => {
+export const getAISuggestion = async (apiKey: string | null, boardData: any[]): Promise<{ suggestion: string, tip: string }> => {
   const token = apiKey || GEMINI_API_KEY
   
   if (token) {
@@ -26,7 +26,7 @@ export const getAISuggestion = async (apiKey, boardData) => {
   return generateNativeSuggestion(boardData)
 }
 
-const generateNativeSuggestion = (tasks) => {
+const generateNativeSuggestion = (tasks: any[]): { suggestion: string, tip: string } => {
   if (!tasks || tasks.length === 0) {
     return {
       suggestion: "Bảng của bạn đang trống. Hãy bắt đầu bằng cách thêm một vài mục tiêu vào 'Backlog' nhé!",
@@ -34,9 +34,9 @@ const generateNativeSuggestion = (tasks) => {
     }
   }
 
-  // Column IDs from taskStore.js: backlog, waiting, ready, in-progress, done
-  const inProgress = tasks.filter(t => t.column === 'in-progress')
-  const backlog = tasks.filter(t => t.column === 'backlog' || t.column === 'waiting')
+  // Column IDs from taskStore.ts: backlog, waiting, ready, in-progress, done
+  const inProgress = tasks.filter(t => t.columnId === 'in-progress' || t.column === 'in-progress')
+  const backlog = tasks.filter(t => t.columnId === 'backlog' || t.column === 'backlog' || t.columnId === 'waiting' || t.column === 'waiting')
   const highPriority = tasks.filter(t => t.priority === 'high' || t.priority === 'urgent')
 
   let suggestion = "Mọi thứ đang được kiểm soát rất tốt! Hãy duy trì đà làm việc này để sớm về đích nhé."

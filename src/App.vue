@@ -30,7 +30,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted } from 'vue'
   import Sidebar from './components/Sidebar.vue'
   import AIRobotAssistant from './components/AIRobotAssistant.vue'
@@ -44,9 +44,9 @@
     updateTheme(savedTheme)
   })
 
-  const toggleTheme = event => {
+  const toggleTheme = (event: MouseEvent) => {
     const isAppearanceTransition =
-      document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      typeof (document as any).startViewTransition === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     const nextTheme = theme.value === 'dark' ? 'light' : 'dark'
 
@@ -60,7 +60,7 @@
     const y = event.clientY
     const endRadius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
 
-    const transition = document.startViewTransition(async () => {
+    const transition = (document as any).startViewTransition(async () => {
       theme.value = nextTheme
       updateTheme(nextTheme)
     })
@@ -79,7 +79,7 @@
     })
   }
 
-  const updateTheme = val => {
+  const updateTheme = (val: string) => {
     document.documentElement.setAttribute('data-theme', val)
     if (val === 'dark') {
       document.documentElement.classList.add('dark')

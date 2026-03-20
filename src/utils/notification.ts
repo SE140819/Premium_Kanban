@@ -4,7 +4,7 @@ import { ElNotification } from 'element-plus'
  * Reusable notification utility using Element Plus
  */
 export const notify = {
-  success(message, title = 'Success') {
+  success(message: string, title: string = 'Success'): void {
     ElNotification({
       title,
       message,
@@ -14,7 +14,7 @@ export const notify = {
     })
   },
 
-  error(message, title = 'Error') {
+  error(message: string, title: string = 'Error'): void {
     ElNotification({
       title,
       message,
@@ -24,7 +24,7 @@ export const notify = {
     })
   },
 
-  info(message, title = 'Info') {
+  info(message: string, title: string = 'Info'): void {
     ElNotification({
       title,
       message,
@@ -34,7 +34,7 @@ export const notify = {
     })
   },
 
-  warning(message, title = 'Warning') {
+  warning(message: string, title: string = 'Warning'): void {
     ElNotification({
       title,
       message,
