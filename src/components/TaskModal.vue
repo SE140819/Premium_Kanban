@@ -115,7 +115,7 @@
 
   const emit = defineEmits(['close', 'save', 'delete'])
   const visible = ref(false)
-  const modalKey = ref(0) // Used to force reset QuillEditor
+  const modalKey = ref(0)
 
   const form = reactive({
     title: '',

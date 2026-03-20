@@ -62,6 +62,7 @@
         />
         <el-icon class="icon-btn" @click="comingSoon"><Share /></el-icon>
         <el-icon class="icon-btn" @click="comingSoon"><MoreFilled /></el-icon>
+        <LiveIndicator />
       </div>
     </header>
 
@@ -103,6 +104,7 @@
   import { notify } from '../utils/notification'
   import BoardColumn from '../components/BoardColumn.vue'
   import TaskModal from '../components/TaskModal.vue'
+  import LiveIndicator from '../components/LiveIndicator.vue'
 
   const props = defineProps({
     currentTheme: String
@@ -125,6 +127,7 @@
 
   onMounted(() => {
     store.fetchTasks()
+    store.setupSync()
   })
 
   const isModalOpen = ref<boolean>(false)

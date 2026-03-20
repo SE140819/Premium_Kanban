@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api, { type Task } from '../api'
 import { notify } from '../utils/notification'
+import { broadcast, onSync, type SyncEvent } from '../services/syncService'
 
 export interface Column {
   id: string
@@ -98,6 +99,7 @@ export const useTaskStore = defineStore('task', () => {
         column.tasks.push(data as Task)
       }
       notify.success(`Task "${data.title}" added successfully.`)
+      broadcast('TASK_ADDED', { columnId, task: data })
     } catch (err) {
       notify.error('Failed to add new task.')
       console.error('Failed to add task:', err)
@@ -114,6 +116,7 @@ export const useTaskStore = defineStore('task', () => {
           if (idx !== -1) {
             col.tasks[idx] = { ...col.tasks[idx], ...updateData } as Task
             notify.success('Task updated successfully.')
+            broadcast('TASK_UPDATED', { taskId, updateData })
             return
           }
         }
@@ -134,6 +137,7 @@ export const useTaskStore = defineStore('task', () => {
           if (idx !== -1) {
             col.tasks.splice(idx, 1)
             notify.success('Task deleted successfully.')
+            broadcast('TASK_DELETED', { taskId })
             return
           }
         }   
@@ -169,6 +173,7 @@ export const useTaskStore = defineStore('task', () => {
       if(id) {
          await api.put(`/tasks/${id}`, updateData)
          notify.success(`Moved to ${toCol.title}`)
+         broadcast('TASK_MOVED', { fromColId, toColId, taskId: String(task._id || task.id), newIndex })
       }
     } catch (err) {
       notify.error('Failed to save task position.')
@@ -187,6 +192,38 @@ export const useTaskStore = defineStore('task', () => {
     localStorage.setItem('hiddenColumns', JSON.stringify(hiddenColumns.value))
   }
 
+  const applyRemoteEvent = (event: SyncEvent): void => {
+    const p = event.payload
+    if (!p) return
+    if (event.type === 'TASK_ADDED') {
+      const column = findColumn(p.columnId)
+      if (column && !column.tasks.find(t => String(t._id || t.id) === String(p.task._id || p.task.id))) {
+        column.tasks.push(p.task as Task)
+      }
+    } else if (event.type === 'TASK_UPDATED') {
+      for (const group of groups.value) {
+        for (const col of group.columns) {
+          const idx = col.tasks.findIndex(t => (t._id || t.id) === p.taskId)
+          if (idx !== -1) { col.tasks[idx] = { ...col.tasks[idx], ...p.updateData } as Task; return }
+        }
+      }
+    } else if (event.type === 'TASK_DELETED') {
+      for (const group of groups.value) {
+        for (const col of group.columns) {
+          const idx = col.tasks.findIndex(t => (t._id || t.id) === p.taskId)
+          if (idx !== -1) { col.tasks.splice(idx, 1); return }
+        }
+      }
+    } else if (event.type === 'TASK_MOVED') {
+      // Re-fetch is safest for move to avoid index math across tabs
+      fetchTasks()
+    }
+  }
+
+  const setupSync = (): (() => void) => {
+    return onSync(applyRemoteEvent)
+  }
+
   return {
     groups,
     isLoading,
@@ -197,6 +234,7 @@ export const useTaskStore = defineStore('task', () => {
     updateTask,
     deleteTask,
     moveTask,
-    toggleColumnVisibility
+    toggleColumnVisibility,
+    setupSync
   }
 })
