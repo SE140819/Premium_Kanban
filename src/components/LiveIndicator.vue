@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted } from 'vue'
-  import { getActiveTabs, setupPongReply, onSync, initSync } from '../services/syncService'
+  import { getActiveTabs, setupPongReply, onSync, initSync } from '@/services/syncService'
 
   const tabCount = ref(0)
   const isFlashing = ref(false)

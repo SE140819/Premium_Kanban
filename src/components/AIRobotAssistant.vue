@@ -90,10 +90,11 @@
 
 <script setup lang="ts">
   import { ref, computed, watch, onMounted } from 'vue'
-  import { useTaskStore } from '../stores/taskStore'
+  import { useTaskStore } from '@/stores/taskStore'
   import { Setting, Refresh, Close } from '@element-plus/icons-vue'
-  import { getAISuggestion } from '../services/aiService'
-  import aiAvatar from '../assets/ai-avatar.png'
+  import { getAISuggestion } from '@/services/aiService'
+  import type { Task } from '@/types/task'
+  import aiAvatar from '@/assets/ai-avatar.png'
 
   const store = useTaskStore()
   const isExpanded = ref(true)
@@ -105,15 +106,8 @@
   const currentSuggestion = ref('Chào bạn! Tôi là Robot trợ lý. Hãy để tôi giúp bạn lên kế hoạch hiệu quả cho hôm nay nhé!')
   const quickTip = ref('Phân bổ thời gian hợp lý cho từng task.')
 
-  const allTasks = computed(() => {
-    return store.groups.flatMap(g => g.columns.flatMap(c => {
-      return c.tasks.map(t => ({
-        title: t.title,
-        priority: t.priority,
-        column: t.columnId,
-        deadline: t.deadline
-      }))
-    }))
+  const allTasks = computed<Task[]>(() => {
+    return store.groups.flatMap(g => g.columns.flatMap(c => c.tasks))
   })
 
   const saveApiKey = () => {

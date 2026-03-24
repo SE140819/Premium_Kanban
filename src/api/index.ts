@@ -1,13 +1,11 @@
 import type { Task, ApiResponse } from '@/types/task'
 import { taskStorage } from '@/storage/taskStorage'
 
-/** Helper to simulate realistic network delay */
 export const delay = (min = 200, max = 600) => {
   const ms = Math.floor(Math.random() * (max - min + 1) + min)
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/** Helper to extract ID from URL like /tasks/123 */
 const getIdFromUrl = (url: string): string => url.split('/').pop() || ''
 
 const api = {
@@ -22,7 +20,6 @@ const api = {
   post: async <T>(url: string, data: Partial<Task>): Promise<ApiResponse<T>> => {
     await delay()
     if (url.endsWith('/tasks')) {
-      // Basic validation
       if (!data.title?.trim()) {
         return { data: null, error: { status: 400, message: 'Title is required' } }
       }

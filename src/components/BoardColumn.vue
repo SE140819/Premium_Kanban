@@ -58,8 +58,8 @@
   import { ref, onMounted } from 'vue'
   import Sortable, { type SortableEvent } from 'sortablejs'
   import { MoreFilled, Plus, Warning } from '@element-plus/icons-vue'
-  import { useTaskStore } from '../stores/taskStore'
-  import TaskCard from './TaskCard.vue'
+  import { useTaskStore } from '@/stores/taskStore'
+  import TaskCard from '@/components/TaskCard.vue'
 
   const store = useTaskStore()
 

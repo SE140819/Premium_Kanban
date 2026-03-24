@@ -99,12 +99,12 @@
 
 <script setup lang="ts">
   import { ref, onMounted, computed } from 'vue'
-  import { useTaskStore } from '../stores/taskStore'
+  import { useTaskStore } from '@/stores/taskStore'
   import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
-  import { notify } from '../utils/notification'
-  import BoardColumn from '../components/BoardColumn.vue'
-  import TaskModal from '../components/TaskModal.vue'
-  import LiveIndicator from '../components/LiveIndicator.vue'
+  import { notify } from '@/utils/notification'
+  import BoardColumn from '@/components/BoardColumn.vue'
+  import TaskModal from '@/components/TaskModal.vue'
+  import LiveIndicator from '@/components/LiveIndicator.vue'
 
   const props = defineProps({
     currentTheme: String

@@ -92,7 +92,7 @@
     Connection,
     MagicStick
   } from '@element-plus/icons-vue'
-  import { notify } from '../utils/notification'
+  import { notify } from '@/utils/notification'
 
   defineProps({
     isOpen: Boolean
