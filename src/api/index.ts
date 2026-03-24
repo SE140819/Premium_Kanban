@@ -1,4 +1,5 @@
-import type { Task, ApiResponse } from '@/types/task'
+import type { Task } from '@/types/task'
+import type { ApiResponse } from '@/types/api'
 import { taskStorage } from '@/storage/taskStorage'
 
 export const delay = (min = 200, max = 600) => {

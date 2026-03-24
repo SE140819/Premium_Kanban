@@ -105,8 +105,8 @@
 </template>
 
 <script setup lang="ts">
-  import { reactive, watch, ref } from 'vue'
-  import { Warning as WarningIcon, Calendar, Delete } from '@element-plus/icons-vue'
+  import { ref, reactive, watch } from 'vue'
+  import {Delete, Calendar } from '@element-plus/icons-vue'
   import type { Task, TaskCreateInput } from '@/types/task'
 
   interface Props {

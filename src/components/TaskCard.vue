@@ -65,6 +65,7 @@
 
 <script setup lang="ts">
   import { InfoFilled } from '@element-plus/icons-vue'
+  import { computed } from 'vue'
   import type { Task } from '@/types/task'
 
   interface Props {

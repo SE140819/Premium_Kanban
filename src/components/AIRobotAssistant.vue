@@ -89,12 +89,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted } from 'vue'
-  import { useTaskStore } from '@/stores/taskStore'
-  import { Setting, Refresh, Close } from '@element-plus/icons-vue'
-  import { getAISuggestion } from '@/services/aiService'
-  import type { Task } from '@/types/task'
   import aiAvatar from '@/assets/ai-avatar.png'
+import { getAISuggestion } from '@/services/aiService'
+import { useTaskStore } from '@/stores/taskStore'
+import type { Task } from '@/types/task'
+import { Close, Refresh, Setting } from '@element-plus/icons-vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
   const store = useTaskStore()
   const isExpanded = ref(true)

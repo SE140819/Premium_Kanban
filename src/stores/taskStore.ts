@@ -2,22 +2,9 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { taskService } from '@/services/taskService'
 import type { Task, TaskCreateInput, TaskUpdateInput } from '@/types/task'
+import type { Column, Group } from '@/types/board'
 import { notify } from '@/utils/notification'
 import { broadcast, onSync, type SyncEvent } from '@/services/syncService'
-
-export interface Column {
-  id: string
-  title: string
-  archivedCount?: number
-  wipLimit?: number | null
-  tasks: Task[]
-}
-
-export interface Group {
-  id: string
-  title: string
-  columns: Column[]
-}
 
 const INITIAL_GROUPS: Group[] = [
   {
@@ -46,8 +33,6 @@ export const useTaskStore = defineStore('task', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
   const hiddenColumns = ref<string[]>(JSON.parse(localStorage.getItem('hiddenColumns') || '[]'))
-
-  // --- Helpers ---
   
   const updateColumns = (callback: (col: Column) => Column) => {
     groups.value = groups.value.map(g => ({
@@ -65,8 +50,6 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   const getTaskId = (t: Task) => String(t.id || t._id)
-
-  // --- Actions ---
 
   const fetchTasks = async (): Promise<void> => {
     isLoading.value = true
