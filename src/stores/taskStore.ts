@@ -4,7 +4,8 @@ import { taskService } from '@/services/taskService'
 import type { Task, TaskCreateInput, TaskUpdateInput } from '@/types/task'
 import type { Column, Group } from '@/types/board'
 import { notify } from '@/utils/notification'
-import { broadcast, onSync, type SyncEvent } from '@/services/syncService'
+import { syncService } from '@/services/syncService'
+import type { SyncEvent } from '@/types/sync'
 
 const INITIAL_GROUPS: Group[] = [
   {
@@ -72,7 +73,7 @@ export const useTaskStore = defineStore('task', () => {
       const data = await taskService.createNewTask({ ...taskData, columnId } as TaskCreateInput)
       updateColumns(col => col.id === columnId ? { ...col, tasks: [...col.tasks, data] } : col)
       notify.success(`Task "${data.title}" added.`)
-      broadcast('TASK_ADDED', { columnId, task: data })
+      syncService.broadcast('TASK_ADDED', { columnId, task: data })
     } catch (err: any) {
       notify.error(err.message || 'Failed to add task.')
     }
@@ -87,7 +88,7 @@ export const useTaskStore = defineStore('task', () => {
         tasks: col.tasks.map(t => getTaskId(t) === targetId ? data : t)
       }))
       notify.success('Task updated.')
-      broadcast('TASK_UPDATED', { taskId: targetId, updateData })
+      syncService.broadcast('TASK_UPDATED', { taskId: targetId, updateData })
     } catch (err: any) {
       notify.error(err.message || 'Update failed.')
       await fetchTasks()
@@ -103,7 +104,7 @@ export const useTaskStore = defineStore('task', () => {
         tasks: col.tasks.filter(t => getTaskId(t) !== targetId)
       }))
       notify.success('Task deleted.')
-      broadcast('TASK_DELETED', { taskId: targetId })
+      syncService.broadcast('TASK_DELETED', { taskId: targetId })
     } catch (err: any) {
       notify.error(err.message || 'Delete failed.')
     }
@@ -136,7 +137,7 @@ export const useTaskStore = defineStore('task', () => {
 
     try {
       await taskService.updateExistingTask(targetId, { columnId: toColId })
-      broadcast('TASK_MOVED', { fromColId, toColId, taskId: targetId, newIndex })
+      syncService.broadcast('TASK_MOVED', { fromColId, toColId, taskId: targetId, newIndex })
     } catch (err: any) {
       notify.error('Move failed.')
       await fetchTasks()
@@ -182,6 +183,6 @@ export const useTaskStore = defineStore('task', () => {
   return {
     groups, isLoading, error, hiddenColumns,
     fetchTasks, addTask, updateTask, deleteTask, moveTask,
-    toggleColumnVisibility, setupSync: () => onSync(applyRemoteEvent)
+    toggleColumnVisibility, setupSync: () => syncService.onSync(applyRemoteEvent)
   }
 })

@@ -1,79 +1,56 @@
-import type { Task } from '@/types/task'
+import type { SyncEvent, SyncEventType } from '@/types/sync'
 
-export type SyncEventType =
-  | 'TASK_ADDED'
-  | 'TASK_UPDATED'
-  | 'TASK_DELETED'
-  | 'TASK_MOVED'
-  | 'PING'
-  | 'PONG'
-
-export interface SyncEvent {
-  type: SyncEventType
-  payload?: any
-  tabId: string
-  timestamp: number
-}
-
-// Unique ID for this tab instance
 export const TAB_ID = Math.random().toString(36).slice(2)
-
 const CHANNEL_NAME = 'kanban-sync'
+
 let channel: BroadcastChannel | null = null
-const listeners: Array<(event: SyncEvent) => void> = []
+const listeners: ((event: SyncEvent) => void)[] = []
 
-export function initSync(): () => void {
-  channel = new BroadcastChannel(CHANNEL_NAME)
+/**
+ * Optimized Synchronization Service
+ */
+export const syncService = {
+  init(): () => void {
+    channel = new BroadcastChannel(CHANNEL_NAME)
+    channel.onmessage = (e: MessageEvent<SyncEvent>) => {
+      if (e.data.tabId !== TAB_ID) listeners.forEach(fn => fn(e.data))
+    }
+    
+    const cleanup = () => { channel?.close(); channel = null }
+    window.addEventListener('beforeunload', cleanup)
+    this.setupPongReply()
+    return cleanup
+  },
 
-  channel.onmessage = (e: MessageEvent<SyncEvent>) => {
-    // Ignore own messages
-    if (e.data.tabId === TAB_ID) return
-    listeners.forEach(fn => fn(e.data))
-  }
+  broadcast(type: SyncEventType, payload?: any): void {
+    channel?.postMessage({ type, payload, tabId: TAB_ID, timestamp: Date.now() })
+  },
 
-  // Broadcast cleanup when this tab closes
-  const cleanup = () => {
-    channel?.close()
-    channel = null
-  }
-  window.addEventListener('beforeunload', cleanup)
-  return cleanup
-}
+  onSync(handler: (event: SyncEvent) => void): () => void {
+    listeners.push(handler)
+    return () => {
+      const idx = listeners.indexOf(handler)
+      if (idx !== -1) listeners.splice(idx, 1)
+    }
+  },
 
-export function broadcast(type: SyncEventType, payload?: any): void {
-  if (!channel) return
-  const event: SyncEvent = { type, payload, tabId: TAB_ID, timestamp: Date.now() }
-  channel.postMessage(event)
-}
-
-export function onSync(handler: (event: SyncEvent) => void): () => void {
-  listeners.push(handler)
-  return () => {
-    const idx = listeners.indexOf(handler)
-    if (idx !== -1) listeners.splice(idx, 1)
-  }
-}
-
-/** Ping other tabs and collect how many reply — returns count within timeout */
-export function getActiveTabs(timeoutMs = 300): Promise<number> {
-  return new Promise(resolve => {
-    if (!channel) return resolve(0)
+  async getActiveTabs(timeout = 300): Promise<number> {
+    if (!channel) return 0
     let count = 0
-    const pongHandler = (e: MessageEvent<SyncEvent>) => {
+    const handler = (e: MessageEvent<SyncEvent>) => {
       if (e.data.type === 'PONG' && e.data.tabId !== TAB_ID) count++
     }
-    channel.addEventListener('message', pongHandler)
-    broadcast('PING')
-    setTimeout(() => {
-      channel?.removeEventListener('message', pongHandler)
-      resolve(count)
-    }, timeoutMs)
-  })
-}
+    channel.addEventListener('message', handler)
+    this.broadcast('PING')
+    return new Promise(resolve => {
+      setTimeout(() => {
+        channel?.removeEventListener('message', handler)
+        resolve(count)
+      }, timeout)
+    })
+  },
 
-/** Reply to PING messages from other tabs */
-export function setupPongReply(): () => void {
-  return onSync(event => {
-    if (event.type === 'PING') broadcast('PONG')
-  })
+  setupPongReply() {
+    this.onSync(e => e.type === 'PING' && this.broadcast('PONG'))
+  }
 }

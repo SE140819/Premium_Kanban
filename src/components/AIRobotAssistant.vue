@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
   import aiAvatar from '@/assets/ai-avatar.png'
-import { getAISuggestion } from '@/services/aiService'
+import { aiService } from '@/services/aiService'
 import { useTaskStore } from '@/stores/taskStore'
 import type { Task } from '@/types/task'
 import { Close, Refresh, Setting } from '@element-plus/icons-vue'
@@ -120,7 +120,7 @@ import { computed, onMounted, ref, watch } from 'vue'
     isThinking.value = true
     try {
       // The service now handles both real AI and a high-fidelity native fallback
-      const result = await getAISuggestion(apiKey.value, allTasks.value)
+      const result = await aiService.getSuggestion(allTasks.value, apiKey.value)
       currentSuggestion.value = result.suggestion
       quickTip.value = result.tip
     } catch (error) {

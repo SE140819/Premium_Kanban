@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted } from 'vue'
-  import { getActiveTabs, setupPongReply, onSync, initSync } from '@/services/syncService'
+  import { syncService } from '@/services/syncService'
 
   const tabCount = ref(0)
   const isFlashing = ref(false)
@@ -23,7 +23,7 @@
   let cleanupList: Array<() => void> = []
 
   async function refreshTabCount() {
-    tabCount.value = await getActiveTabs()
+    tabCount.value = await syncService.getActiveTabs()
   }
 
   function flashBadge() {
@@ -32,9 +32,8 @@
   }
 
   onMounted(async () => {
-    const cleanupSync = initSync()
-    const cleanupPong = setupPongReply()
-    const cleanupListener = onSync(event => {
+    const cleanupSync = syncService.init()
+    const cleanupListener = syncService.onSync(event => {
       if (!['PING', 'PONG'].includes(event.type)) {
         flashBadge()
       }
@@ -43,7 +42,7 @@
       }
     })
 
-    cleanupList = [cleanupSync, cleanupPong, cleanupListener]
+    cleanupList = [cleanupSync, cleanupListener]
     await refreshTabCount()
 
     // Refresh tab count every 5s
