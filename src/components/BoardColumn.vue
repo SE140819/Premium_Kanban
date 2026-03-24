@@ -9,7 +9,7 @@
           :class="column.id"
         ></div>
         <h2 class="column-title">{{ column.title }}</h2>
-        <el-icon class="priority-warn"><Warning /></el-icon>
+        <el-icon class="priority-warn"><WarningIcon /></el-icon>
         <span class="task-count">
           {{ column.tasks.length }}<span v-if="column.wipLimit"> / {{ column.wipLimit }}</span>
         </span>
@@ -39,7 +39,7 @@
     >
       <TaskCard
         v-for="task in column.tasks"
-        :key="task._id || task.id"
+        :key="task.id || task._id"
         :task="task"
         @edit="$emit('edit-task', { columnId: column.id, task })"
       />
@@ -57,20 +57,25 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue'
   import Sortable, { type SortableEvent } from 'sortablejs'
-  import { MoreFilled, Plus, Warning } from '@element-plus/icons-vue'
-  import { useTaskStore } from '@/stores/taskStore'
+  import { MoreFilled, Plus, Warning as WarningIcon } from '@element-plus/icons-vue'
+  import { useTaskStore, type Column } from '@/stores/taskStore'
+  import type { Task } from '@/types/task'
   import TaskCard from '@/components/TaskCard.vue'
 
   const store = useTaskStore()
 
-  const props = defineProps({
-    column: {
-      type: Object,
-      required: true
-    }
-  })
+  interface Props {
+    column: Column
+  }
 
-  const emit = defineEmits(['add-task', 'edit-task', 'move-task'])
+  const props = defineProps<Props>()
+
+  const emit = defineEmits<{
+    (e: 'add-task', columnId: string): void
+    (e: 'edit-task', payload: { columnId: string; task: Task }): void
+    (e: 'move-task', payload: { fromColId: string; toColId: string; taskId: string; newIndex: number }): void
+  }>()
+
   const taskList = ref<HTMLElement | null>(null)
 
   onMounted(() => {
@@ -81,12 +86,14 @@
       ghostClass: 'ghost-card',
       filter: '.add-task-hover-btn', // Prevent dragging the add button
       onEnd: (evt: SortableEvent) => {
-        emit('move-task', {
-          fromColId: evt.from.dataset.columnId,
-          toColId: evt.to.dataset.columnId,
-          taskId: evt.item.dataset.taskId,
-          newIndex: evt.newIndex
-        })
+        if (evt.from.dataset.columnId && evt.to.dataset.columnId && evt.item.dataset.taskId) {
+           emit('move-task', {
+            fromColId: evt.from.dataset.columnId,
+            toColId: evt.to.dataset.columnId,
+            taskId: evt.item.dataset.taskId,
+            newIndex: evt.newIndex ?? 0
+          })
+        }
       }
     })
   })

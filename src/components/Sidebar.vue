@@ -94,9 +94,11 @@
   } from '@element-plus/icons-vue'
   import { notify } from '@/utils/notification'
 
-  defineProps({
-    isOpen: Boolean
-  })
+  interface Props {
+    isOpen: boolean
+  }
+
+  defineProps<Props>()
 
   const comingSoon = () => {
     notify.info('This feature is coming soon!')

@@ -1,11 +1,11 @@
 <template>
   <div
     class="task-card"
-    :data-task-id="task._id || task.id"
+    :data-task-id="task.id || task._id"
     @click="$emit('edit', task)"
   >
     <div class="card-top">
-      <span class="task-id">SAT-{{ String(task._id || task.id).slice(-3).toUpperCase() }}</span>
+      <span class="task-id">SAT-{{ String(task.id || task._id).slice(-3).toUpperCase() }}</span>
       <div class="user-avatar-mini">
         <img
           v-if="task.avatar"
@@ -64,16 +64,19 @@
 </template>
 
 <script setup lang="ts">
-  defineProps({
-    task: {
-      type: Object,
-      required: true
-    }
-  })
+  import { InfoFilled } from '@element-plus/icons-vue'
+  import type { Task } from '@/types/task'
 
-  defineEmits(['edit'])
+  interface Props {
+    task: Task
+  }
 
-  const formatDate = (date: string) => {
+  defineProps<Props>()
+  defineEmits<{
+    (e: 'edit', task: Task): void
+  }>()
+
+  const formatDate = (date: string | null | undefined): string => {
     if (!date) return ''
     const d = new Date(date)
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })

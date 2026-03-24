@@ -44,7 +44,7 @@
         <div class="form-grid">
           <div class="grid-item">
             <label class="item-label">
-              <el-icon><Warning /></el-icon> Priority
+              <el-icon><WarningIcon /></el-icon> Priority
             </label>
             <el-select
               v-model="form.priority"
@@ -104,20 +104,28 @@
   </el-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { reactive, watch, ref } from 'vue'
-  import { Warning, Calendar, Delete } from '@element-plus/icons-vue'
+  import { Warning as WarningIcon, Calendar, Delete } from '@element-plus/icons-vue'
+  import type { Task, TaskCreateInput } from '@/types/task'
 
-  const props = defineProps({
-    isOpen: Boolean,
-    task: Object
-  })
+  interface Props {
+    isOpen: boolean
+    task: Task | null
+  }
 
-  const emit = defineEmits(['close', 'save', 'delete'])
+  const props = defineProps<Props>()
+
+  const emit = defineEmits<{
+    (e: 'close'): void
+    (e: 'save', data: Omit<TaskCreateInput, 'columnId'>): void
+    (e: 'delete'): void
+  }>()
+
   const visible = ref(false)
   const modalKey = ref(0)
 
-  const form = reactive({
+  const form = reactive<Omit<TaskCreateInput, 'columnId'>>({
     title: '',
     description: '',
     priority: 'low',
@@ -134,7 +142,7 @@
 
   watch(
     () => props.isOpen,
-    newVal => {
+    (newVal) => {
       visible.value = newVal
       if (newVal && !props.task) {
         resetForm()
@@ -142,7 +150,7 @@
     }
   )
 
-  watch(visible, newVal => {
+  watch(visible, (newVal) => {
     if (!newVal) {
       emit('close')
     }
@@ -150,7 +158,7 @@
 
   watch(
     () => props.task,
-    newTask => {
+    (newTask) => {
       if (newTask) {
         form.title = newTask.title || ''
         form.description = newTask.description || ''

@@ -10,6 +10,9 @@ export interface Task {
   deadline?: string | null;
   createdAt: string;
   updatedAt?: string;
+  avatar?: string;
+  labels?: string[];
+  type?: string;
 }
 
 export type TaskCreateInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;

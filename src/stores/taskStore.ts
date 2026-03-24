@@ -163,21 +163,24 @@ export const useTaskStore = defineStore('task', () => {
     groups.value = groups.value.map(group => ({
       ...group,
       columns: group.columns.map(col => {
-        if (col.id === fromColId && col.id === toColId) {
-          // Moving within same column
+        const isFrom = col.id === fromColId
+        const isTo = col.id === toColId
+        
+        if (isFrom && isTo) {
           const otherTasks = col.tasks.filter(t => String(t.id || t._id) !== targetId)
           const newTasks = [...otherTasks]
           newTasks.splice(newIndex, 0, updatedTask)
           return { ...col, tasks: newTasks }
         }
-        if (col.id === fromColId) {
-          return { ...col, tasks: col.tasks.filter(t => String(t.id || t._id) !== targetId) }
-        }
-        if (col.id === toColId) {
+        
+        if (isFrom) return { ...col, tasks: col.tasks.filter(t => String(t.id || t._id) !== targetId) }
+        
+        if (isTo) {
           const newTasks = [...col.tasks]
           newTasks.splice(newIndex, 0, updatedTask)
           return { ...col, tasks: newTasks }
         }
+        
         return col
       })
     }))

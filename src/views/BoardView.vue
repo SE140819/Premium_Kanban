@@ -100,6 +100,7 @@
 <script setup lang="ts">
   import { ref, onMounted, computed } from 'vue'
   import { useTaskStore } from '@/stores/taskStore'
+  import type { Task, TaskCreateInput } from '@/types/task'
   import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
   import { notify } from '@/utils/notification'
   import BoardColumn from '@/components/BoardColumn.vue'
@@ -131,7 +132,7 @@
   })
 
   const isModalOpen = ref<boolean>(false)
-  const selectedTask = ref<Record<string, any> | null>(null)
+  const selectedTask = ref<Task | null>(null)
   const activeColumnId = ref<string | null>(null)
 
   const openAddTaskModal = (columnId: string) => {
@@ -140,7 +141,7 @@
     isModalOpen.value = true
   }
 
-  const openEditTaskModal = ({ columnId, task }: { columnId: string; task: Record<string, any> }) => {
+  const openEditTaskModal = ({ columnId, task }: { columnId: string; task: Task }) => {
     activeColumnId.value = columnId
     selectedTask.value = { ...task }
     isModalOpen.value = true
@@ -152,7 +153,7 @@
     activeColumnId.value = null
   }
 
-  const handleSaveTask = async (taskData: Record<string, any>) => {
+  const handleSaveTask = async (taskData: Omit<TaskCreateInput, 'columnId'>) => {
     if (selectedTask.value) {
       const id = selectedTask.value._id || selectedTask.value.id
       const updatedTask = { ...selectedTask.value, ...taskData }
