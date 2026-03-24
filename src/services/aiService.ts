@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import type { Task } from '@/types/task'
 
 const GEMINI_API_KEY = 'AIzaSyDyJ2K41Lxr1ztBtj_ZbLr_7ycr0s2ni5g'
 
-export const getAISuggestion = async (apiKey: string | null, boardData: any[]): Promise<{ suggestion: string, tip: string }> => {
+export const getAISuggestion = async (apiKey: string | null, boardData: Task[]): Promise<{ suggestion: string, tip: string }> => {
   const token = apiKey || GEMINI_API_KEY
   
   if (token) {

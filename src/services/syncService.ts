@@ -1,4 +1,4 @@
-import type { Task } from '../api'
+import type { Task } from '@/types/task'
 
 export type SyncEventType =
   | 'TASK_ADDED'
