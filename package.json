@@ -12,11 +12,13 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@element-plus/icons-vue": "^2.3.2",
     "@google/generative-ai": "^0.24.1",
     "@vueup/vue-quill": "^1.2.0",
     "axios": "^1.13.6",
     "element-plus": "^2.13.5",
+    "groq-sdk": "^1.1.1",
     "pinia": "^3.0.4",
     "sortablejs": "^1.15.7",
     "vue": "^3.5.29",

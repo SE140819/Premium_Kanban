@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    width="640px"
+    width="800px"
     @closed="handleClosed"
     class="premium-dialog"
     :show-close="false"
@@ -21,11 +21,22 @@
         label-position="top"
       >
         <el-form-item class="title-item">
-          <el-input
-            v-model="form.title"
-            placeholder="Issue title"
-            class="title-input"
-          />
+          <div class="title-container">
+            <el-input
+              v-model="form.title"
+              placeholder="Issue title"
+              class="title-input"
+            />
+            <el-button 
+              class="magic-btn" 
+              :loading="isGenerating"
+              :disabled="!form.title.trim()"
+              @click="handleMagicGenerate"
+              title="Magic Generate Description"
+            >
+              <el-icon v-if="!isGenerating"><MagicStick /></el-icon>
+            </el-button>
+          </div>
         </el-form-item>
 
         <el-form-item class="editor-item">
@@ -105,25 +116,24 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, watch } from 'vue'
-  import {Delete, Calendar } from '@element-plus/icons-vue'
-  import type { Task, TaskCreateInput } from '@/types/task'
+  import { ref, reactive, watch, nextTick, computed } from 'vue'
+  import { Delete, Calendar, MagicStick } from '@element-plus/icons-vue'
+  import { aiService } from '@/services/aiService'
+  import { useModalStore } from '@/stores/modalStore'
+  import { useTaskStore } from '@/stores/taskStore'
+  import type { TaskCreateInput } from '@/types/task'
 
-  interface Props {
-    isOpen: boolean
-    task: Task | null
-  }
+  const modalStore = useModalStore()
+  const taskStore = useTaskStore()
 
-  const props = defineProps<Props>()
+  const visible = computed({
+    get: () => modalStore.isTaskModalOpen,
+    set: (val) => { if (!val) modalStore.closeModal() }
+  })
 
-  const emit = defineEmits<{
-    (e: 'close'): void
-    (e: 'save', data: Omit<TaskCreateInput, 'columnId'>): void
-    (e: 'delete'): void
-  }>()
-
-  const visible = ref(false)
+  const task = computed(() => modalStore.selectedTask)
   const modalKey = ref(0)
+  const isGenerating = ref(false)
 
   const form = reactive<Omit<TaskCreateInput, 'columnId'>>({
     title: '',
@@ -141,49 +151,62 @@
   }
 
   watch(
-    () => props.isOpen,
-    (newVal) => {
-      visible.value = newVal
-      if (newVal && !props.task) {
-        resetForm()
-      }
-    }
-  )
-
-  watch(visible, (newVal) => {
-    if (!newVal) {
-      emit('close')
-    }
-  })
-
-  watch(
-    () => props.task,
-    (newTask) => {
-      if (newTask) {
-        form.title = newTask.title || ''
-        form.description = newTask.description || ''
-        form.priority = newTask.priority || 'low'
-        form.deadline = newTask.deadline || null
+    () => modalStore.isTaskModalOpen,
+    (isOpen) => {
+      if (isOpen) {
+        if (modalStore.selectedTask) {
+          const t = modalStore.selectedTask
+          form.title = t.title || ''
+          form.description = t.description || ''
+          form.priority = t.priority || 'low'
+          form.deadline = t.deadline || null
+        } else {
+          resetForm()
+        }
         modalKey.value++
       }
-    },
-    { immediate: true }
+    }
   )
+
+  const handleMagicGenerate = async () => {
+    if (!form.title.trim() || isGenerating.value) return
+    isGenerating.value = true
+    try {
+      const apiKey = localStorage.getItem('groq_api_key') || ''
+      const description = await aiService.generateDescription(form.title, apiKey)
+      form.description = description
+      await nextTick()
+      modalKey.value++ 
+    } catch (e) {
+      console.error("Magic fail:", e)
+    } finally {
+      isGenerating.value = false
+    }
+  }
    
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim()) return
-    emit('save', { ...form })
-    visible.value = false
+    
+    if (task.value) {
+      const id = task.value._id || task.value.id
+      await taskStore.updateTask(id, { ...form })
+    } else if (modalStore.activeColumnId) {
+      await taskStore.addTask(modalStore.activeColumnId, { ...form })
+    }
+    
+    modalStore.closeModal()
   }
 
-  const handleDelete = () => {
-    emit('delete')
-    visible.value = false
+  const handleDelete = async () => {
+    if (task.value) {
+      const id = task.value._id || task.value.id
+      await taskStore.deleteTask(id)
+    }
+    modalStore.closeModal()
   }
 
   const handleClosed = () => {
     resetForm()
-    emit('close')
   }
 </script>
 
@@ -209,6 +232,23 @@
 
   :global(.premium-dialog .el-dialog__body) {
     padding: 0 24px 20px !important;
+    max-height: 80vh;
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  :global(.premium-dialog .el-dialog__body::-webkit-scrollbar) {
+    width: 8px;
+  }
+
+  :global(.premium-dialog .el-dialog__body::-webkit-scrollbar-thumb) {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+  }
+  
+  :global(.premium-dialog .el-dialog__body::-webkit-scrollbar-thumb:hover) {
+    background: rgba(255, 255, 255, 0.25);
   }
 
   :global(.premium-dialog .el-dialog__footer) {
@@ -261,6 +301,40 @@
     color: rgba(255, 255, 255, 0.15);
   }
 
+  .title-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .magic-btn {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(168, 85, 247, 0.1)) !important;
+    border: 1px solid rgba(168, 85, 247, 0.2) !important;
+    color: #a855f7 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+
+  .magic-btn:hover:not(.is-disabled) {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(168, 85, 247, 0.2)) !important;
+    border-color: #a855f7 !important;
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+  }
+
+  .magic-btn.is-disabled {
+    opacity: 0.3;
+    filter: grayscale(1);
+    cursor: not-allowed;
+  }
+
   .editor-container {
     background: transparent;
     border: none;
@@ -282,12 +356,14 @@
     border: none !important;
     font-family: 'Outfit', sans-serif !important;
     font-size: 15px !important;
-    min-height: 120px;
+    height: auto !important;
   }
 
   :deep(.ql-editor) {
-    padding: 12px 0 !important;
+    padding: 12px 0 60px !important; /* Extra bottom space for safe reading */
     color: #e2e8f0 !important;
+    height: auto !important;
+    min-height: 200px; /* Taller editor by default */
   }
 
   :deep(.ql-editor.ql-blank::before) {

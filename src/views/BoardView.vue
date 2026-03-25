@@ -78,33 +78,22 @@
               v-for="column in group.columns.filter(c => !store.hiddenColumns.includes(c.id))"
               :key="column.id"
               :column="column"
-              @add-task="openAddTaskModal"
-              @edit-task="openEditTaskModal"
               @move-task="handleMoveTask"
             />
           </template>
         </div>
       </div>
     </div>
-
-    <TaskModal
-      :is-open="isModalOpen"
-      :task="selectedTask"
-      @close="closeModal"
-      @save="handleSaveTask"
-      @delete="handleDeleteTask"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, onMounted, computed } from 'vue'
   import { useTaskStore } from '@/stores/taskStore'
-  import type { Task, TaskCreateInput } from '@/types/task'
+  import { useModalStore } from '@/stores/modalStore'
   import { Platform, Share, MoreFilled, Close, ArrowRight, Menu, View } from '@element-plus/icons-vue'
   import { notify } from '@/utils/notification'
   import BoardColumn from '@/components/BoardColumn.vue'
-  import TaskModal from '@/components/TaskModal.vue'
   import LiveIndicator from '@/components/LiveIndicator.vue'
 
   const props = defineProps({
@@ -112,6 +101,7 @@
   })
 
   const store = useTaskStore()
+  const modalStore = useModalStore()
 
   const allColumns = computed(() => {
     return store.groups.flatMap(g => g.columns)
@@ -130,47 +120,6 @@
     store.fetchTasks()
     store.setupSync()
   })
-
-  const isModalOpen = ref<boolean>(false)
-  const selectedTask = ref<Task | null>(null)
-  const activeColumnId = ref<string | null>(null)
-
-  const openAddTaskModal = (columnId: string) => {
-    activeColumnId.value = columnId
-    selectedTask.value = null
-    isModalOpen.value = true
-  }
-
-  const openEditTaskModal = ({ columnId, task }: { columnId: string; task: Task }) => {
-    activeColumnId.value = columnId
-    selectedTask.value = { ...task }
-    isModalOpen.value = true
-  }
-
-  const closeModal = () => {
-    isModalOpen.value = false
-    selectedTask.value = null
-    activeColumnId.value = null
-  }
-
-  const handleSaveTask = async (taskData: Omit<TaskCreateInput, 'columnId'>) => {
-    if (selectedTask.value) {
-      const id = selectedTask.value._id || selectedTask.value.id
-      const updatedTask = { ...selectedTask.value, ...taskData }
-      await store.updateTask(id, updatedTask)
-    } else {
-      await store.addTask(activeColumnId.value!, taskData)
-    }
-    closeModal()
-  }
-
-  const handleDeleteTask = async () => {
-    if (selectedTask.value) {
-      const id = selectedTask.value._id || selectedTask.value.id
-      await store.deleteTask(id)
-    }
-    closeModal()
-  }
 
   const handleMoveTask = async ({ fromColId, toColId, taskId, newIndex }: { fromColId: string; toColId: string; taskId: string; newIndex: number }) => {
     await store.moveTask(fromColId, toColId, taskId, newIndex)

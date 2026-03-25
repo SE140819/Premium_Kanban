@@ -2,7 +2,6 @@
   <div
     class="task-card"
     :data-task-id="task.id || task._id"
-    @click="$emit('edit', task)"
   >
     <div class="card-top">
       <span class="task-id">SAT-{{ String(task.id || task._id).slice(-3).toUpperCase() }}</span>
@@ -73,9 +72,6 @@
   }
 
   defineProps<Props>()
-  defineEmits<{
-    (e: 'edit', task: Task): void
-  }>()
 
   const formatDate = (date: string | null | undefined): string => {
     if (!date) return ''

@@ -27,7 +27,7 @@
         </el-dropdown>
         <el-icon
           class="icon-btn add-btn"
-          @click="$emit('add-task', column.id)"
+          @click="modalStore.openAddTaskModal(column.id)"
           ><Plus
         /></el-icon>
       </div>
@@ -41,12 +41,12 @@
         v-for="task in column.tasks"
         :key="task.id || task._id"
         :task="task"
-        @edit="$emit('edit-task', { columnId: column.id, task })"
+        @click="modalStore.openEditTaskModal(column.id, task)"
       />
       <!-- Add button only at the bottom of the list -->
       <div
         class="add-task-hover-btn"
-        @click="$emit('add-task', column.id)"
+        @click="modalStore.openAddTaskModal(column.id)"
       >
         <el-icon><Plus /></el-icon>
       </div>
@@ -59,11 +59,13 @@
   import Sortable, { type SortableEvent } from 'sortablejs'
   import { MoreFilled, Plus, Warning as WarningIcon } from '@element-plus/icons-vue'
   import { useTaskStore } from '@/stores/taskStore'
+  import { useModalStore } from '@/stores/modalStore'
   import type { Task } from '@/types/task'
   import type { Column } from '@/types/board'
   import TaskCard from '@/components/TaskCard.vue'
 
   const store = useTaskStore()
+  const modalStore = useModalStore()
 
   interface Props {
     column: Column
@@ -72,8 +74,6 @@
   const props = defineProps<Props>()
 
   const emit = defineEmits<{
-    (e: 'add-task', columnId: string): void
-    (e: 'edit-task', payload: { columnId: string; task: Task }): void
     (e: 'move-task', payload: { fromColId: string; toColId: string; taskId: string; newIndex: number }): void
   }>()
 

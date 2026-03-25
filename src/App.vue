@@ -27,6 +27,7 @@
       </main>
     </div>
     <AIRobotAssistant />
+    <TaskModal />
   </div>
 </template>
 
@@ -34,6 +35,7 @@
   import { ref, onMounted } from 'vue'
   import Sidebar from '@/components/Sidebar.vue'
   import AIRobotAssistant from '@/components/AIRobotAssistant.vue'
+  import TaskModal from '@/components/TaskModal.vue'
 
   const theme = ref('dark')
   const sidebarOpen = ref(false)
