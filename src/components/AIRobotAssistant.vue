@@ -32,6 +32,20 @@
           </div>
           <div class="header-actions">
             <el-icon
+              v-if="!isChatMode"
+              class="action-btn"
+              @click="toggleChat"
+              title="Trò chuyện với AI"
+              ><ChatDotRound
+            /></el-icon>
+            <el-icon
+              v-else
+              class="action-btn"
+              @click="toggleChat"
+              title="Quay lại gợi ý"
+              ><ArrowLeft
+            /></el-icon>
+            <el-icon
               class="action-btn"
               @click="showConfig = !showConfig"
               title="Cấu hình API"
@@ -64,7 +78,7 @@
           <a href="https://console.groq.com/" target="_blank" class="key-link">Lấy Key Groq tại đây ↗</a>
         </div>
 
-        <div class="suggestion-content" v-else>
+        <div class="suggestion-content" v-else-if="!isChatMode">
           <div v-if="isThinking" class="thinking-state">
             <div class="loading-bar"></div>
             <p>Đang đọc bảng công việc của bạn...</p>
@@ -110,6 +124,42 @@
             </el-button>
           </div>
         </div>
+
+        <!-- Chat Content -->
+        <div class="chat-content" v-else>
+          <div class="message-list" ref="chatScrollRef">
+            <div 
+              v-for="(msg, idx) in chatMessages" 
+              :key="idx" 
+              class="message-wrapper"
+              :class="msg.role"
+            >
+              <div class="message-bubble shadow-premium">
+                {{ msg.content }}
+              </div>
+            </div>
+            <div v-if="isThinking" class="message-wrapper assistant">
+              <div class="message-bubble shadow-premium thinking">
+                <div class="dot-typing"></div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-wrapper">
+            <el-input
+              v-model="userInput"
+              placeholder="Nhập tin nhắn..."
+              @keyup.enter="sendMessage"
+              size="small"
+              class="premium-input"
+            >
+              <template #append>
+                <el-button @click="sendMessage" :loading="isThinking" class="send-btn">
+                  <el-icon><Promotion /></el-icon>
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+        </div>
       </div>
     </transition>
   </div>
@@ -120,8 +170,8 @@
 import { aiService } from '@/services/aiService'
 import { useTaskStore } from '@/stores/taskStore'
 import type { Task } from '@/types/task'
-import { Close, Refresh, Setting, Plus } from '@element-plus/icons-vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { Close, Refresh, Setting, Plus, ChatDotRound, ArrowLeft, Promotion } from '@element-plus/icons-vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 
   const store = useTaskStore()
   const isExpanded = ref(true)
@@ -133,6 +183,14 @@ import { computed, onMounted, ref, watch } from 'vue'
   const currentSuggestion = ref('Đang phân tích bảng của bạn...')
   const quickTip = ref('Phím tắt: Ctrl + N để thêm task nhanh.')
   const suggestedActions = ref<any[]>([])
+  
+  // Chat Logic
+  const isChatMode = ref(false)
+  const userInput = ref('')
+  const chatMessages = ref<{ role: 'user' | 'assistant', content: string }[]>([
+    { role: 'assistant', content: 'Chào cậu! Mình là Fastboy AI. Hôm nay cậu có gì muốn chia sẻ hay cần mình giúp gì không? ✨' }
+  ])
+  const chatScrollRef = ref<HTMLElement | null>(null)
   
   // 3D Tilt Logic
   const mouseX = ref(0)
@@ -210,6 +268,78 @@ import { computed, onMounted, ref, watch } from 'vue'
       suggestedActions.value = suggestedActions.value.filter(a => a !== action)
     } catch (e) {
       console.error("Failed to add AI task:", e)
+    }
+  }
+
+  const toggleChat = () => {
+    isChatMode.value = !isChatMode.value
+    if (isChatMode.value) {
+      nextTick(scrollToBottom)
+    }
+  }
+
+  const sendMessage = async () => {
+    if (!userInput.value.trim() || isThinking.value) return
+
+    const userText = userInput.value.trim()
+    userInput.value = ''
+    chatMessages.value.push({ role: 'user', content: userText })
+    
+    isThinking.value = true
+    nextTick(scrollToBottom)
+
+    try {
+      const { message, action } = await aiService.chat(chatMessages.value, apiKey.value)
+      chatMessages.value.push({ role: 'assistant', content: message })
+      
+      if (action) {
+        await executeAIAction(action)
+      }
+    } catch (e) {
+      chatMessages.value.push({ role: 'assistant', content: 'Ui, mình gặp chút lỗi rồi. Thử lại sau nhé!' })
+    } finally {
+      isThinking.value = false
+      nextTick(scrollToBottom)
+    }
+  }
+
+  const executeAIAction = async (action: any) => {
+    console.log("Executing AI Action:", action)
+    try {
+      if (action.type === 'add_task') {
+        const { title, description, priority, columnId, deadline } = action.params
+        const validCols = ['backlog', 'waiting', 'ready', 'in-progress', 'done']
+        const targetCol = columnId ? columnId.toLowerCase() : 'backlog'
+        const finalCol = validCols.includes(targetCol) ? targetCol : 'backlog'
+
+        await store.addTask(finalCol, {
+          title: title || 'New Task',
+          description: description || '',
+          priority: priority ? priority.toLowerCase() : 'medium',
+          deadline: deadline || null
+        })
+      } else if (action.type === 'delete_task') {
+        const { taskId, title } = action.params
+        let targetId = taskId
+        
+        // Nếu không có ID, tìm theo tên
+        if (!targetId && title) {
+          const found = allTasks.value.find(t => t.title.toLowerCase().includes(title.toLowerCase()))
+          if (found) targetId = found.id || found._id
+        }
+
+        if (targetId) {
+          await store.deleteTask(targetId)
+        }
+      }
+    } catch (err) {
+      console.error("AI Action failed:", err)
+    }
+  }
+
+  const scrollToBottom = () => {
+    if (chatScrollRef.value) {
+      chatScrollRef.value.scrollTop = chatScrollRef.value.scrollHeight
     }
   }
 
@@ -361,6 +491,7 @@ import { computed, onMounted, ref, watch } from 'vue'
     color: var(--text-secondary);
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -601,6 +732,128 @@ import { computed, onMounted, ref, watch } from 'vue'
     filter: blur(10px);
   }
 
+  /* Chat Styles */
+  .chat-content {
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    margin: -10px -10px 0;
+  }
+
+  .message-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .message-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .message-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  .message-wrapper {
+    display: flex;
+    width: 100%;
+  }
+
+  .message-wrapper.user {
+    justify-content: flex-end;
+  }
+
+  .message-wrapper.assistant {
+    justify-content: flex-start;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: 15px;
+    position: relative;
+    word-break: break-word;
+  }
+
+  .user .message-bubble {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  }
+
+  .assistant .message-bubble {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f1f5f9;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .chat-input-wrapper {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+
+  .premium-input :deep(.el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+    border-radius: 12px !important;
+  }
+
+  .premium-input :deep(.el-input-group__append) {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 10px !important;
+  }
+
+  .send-btn {
+    border: none !important;
+    background: transparent !important;
+    color: #4f46e5 !important;
+    font-size: 18px !important;
+    transition: all 0.2s !important;
+  }
+
+  .send-btn:hover {
+    color: #7c3aed !important;
+    transform: scale(1.1);
+  }
+
+  /* Dot Typing Animation */
+  .dot-typing {
+    position: relative;
+    left: -9999px;
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: #4f46e5;
+    color: #4f46e5;
+    box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5;
+    animation: dot-typing 1.5s infinite linear;
+    margin: 6px 15px;
+  }
+
+  @keyframes dot-typing {
+    0% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+    16.667% { box-shadow: 9984px -6px 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+    33.333% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+    50% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px -6px 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+    66.667% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+    83.333% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px -6px 0 0 #4f46e5; }
+    100% { box-shadow: 9984px 0 0 0 #4f46e5, 9999px 0 0 0 #4f46e5, 10014px 0 0 0 #4f46e5; }
+  }
+
   /* Handle mobile */
   @media (max-width: 768px) {
     .ai-assistant-wrapper {
@@ -609,6 +862,9 @@ import { computed, onMounted, ref, watch } from 'vue'
     }
     .suggestion-box {
       width: 280px;
+    }
+    .chat-content {
+      height: 350px;
     }
   }
 </style>

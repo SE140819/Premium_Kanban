@@ -106,5 +106,42 @@ export const aiService = {
       tip: 'Thói quen nhỏ tạo nên thành công lớn.',
       actions: [{ title: 'Vươn vai & Thư giãn 2p', description: 'Giảm căng thẳng sau thời gian dài ngồi máy tính.', priority: 'low' }]
     }
+  },
+
+  async chat(messages: { role: 'user' | 'assistant' | 'system', content: string }[], apiKey: string): Promise<{ message: string, action?: any }> {
+    if (!apiKey) return { message: "Vui lòng nhập API Key để trò chuyện với mình nhé!" }
+    try {
+      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true })
+      const today = new Date().toISOString().split('T')[0]
+      const systemPrompt = `Bạn là một trợ lý AI đáng yêu tên là "Fastboy AI", một cô gái robot anime thông minh, nhiệt huyết. 
+      Hôm nay là ngày: ${today}.
+      
+      YÊU CẦU QUAN TRỌNG:
+      1. Trả về định dạng JSON DUY NHẤT: { "message": "nội dung trò chuyện", "action": null hoặc đối tượng hành động }
+      2. Nếu người dùng muốn thêm việc, đặt "action": { "type": "add_task", "params": { "title": "tên việc", "description": "mô tả ngắn", "priority": "low|medium|high", "columnId": "backlog|ready", "deadline": "YYYY-MM-DD" } }
+      3. Nếu người dùng nói "mai", "tuần sau", hãy tự tính toán "deadline" dựa trên ngày hôm nay (${today}).
+      4. Luôn ưu tiên thân thiện, sử dụng icon và khuyến khích người dùng.`
+
+      const response = await groq.chat.completions.create({ 
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        max_tokens: 1000,
+        response_format: { type: 'json_object' }
+      })
+
+      let rawContent = response.choices[0]?.message?.content || '{}'
+      // Xử lý trường hợp AI trả về markdown code block dù đã set response_format
+      rawContent = rawContent.replace(/```json|```/g, '').trim()
+      
+      const res = JSON.parse(rawContent)
+      return {
+        message: res.message || "Mình đang hơi bận một chút, bạn đợi tí nhé!",
+        action: res.action
+      }
+    } catch (e) {
+      console.error("Chat failed:", e)
+      return { message: "Ui da! Có chút nhầm lẫn trong lúc mình xử lý thông tin. Cậu thử lại nhé!" }
+    }
   }
 }
