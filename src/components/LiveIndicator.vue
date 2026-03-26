@@ -1,5 +1,5 @@
 <template>
-  <div
+  <!-- <div
     class="live-indicator"
     :class="{ flashing: isFlashing }"
     :title="`${tabCount + 1} tab(s) đang mở`"
@@ -10,7 +10,7 @@
       v-if="tabCount > 0"
       class="tab-badge"
     >{{ tabCount + 1 }} tabs</span>
-  </div>
+  </div> -->
 </template>
 
 <script setup lang="ts">
